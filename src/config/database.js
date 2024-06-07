@@ -12,6 +12,9 @@ module.exports = {
         dialectOptions: {
             bigNumberStrings: true,
         },
+        logging: false,
+        query: { raw: true },
+        timezone: '+07:00'
     },
     test: {
         username: process.env.CI_DB_USERNAME,
