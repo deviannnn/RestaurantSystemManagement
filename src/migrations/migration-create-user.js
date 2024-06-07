@@ -11,25 +11,26 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       fullName: {
+        allowNull: false,
         type: Sequelize.STRING,
         allowNull: false
       },
       gender: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false
+        allowNull: false,
+        type: Sequelize.BOOLEAN
       },
       email: {
-        type: Sequelize.STRING,
         allowNull: false,
+        type: Sequelize.STRING,
         unique: true
       },
       password: {
-        type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        type: Sequelize.STRING
       },
       active: {
-        type: Sequelize.BOOLEAN,
         allowNull: false,
+        type: Sequelize.BOOLEAN,
         defaultValue: false
       },
       createdAt: {
