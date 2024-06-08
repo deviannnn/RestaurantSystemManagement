@@ -11,12 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      this.belongsTo(models.Role, {
+        foreignKey: 'roleId',
+        as: 'role'
+      });
     }
   }
   User.init({
     fullName: { type: DataTypes.STRING, allowNull: false },
-    gender: { type: DataTypes.BOOLEAN, allowNull: false},
+    gender: { type: DataTypes.BOOLEAN, allowNull: false },
+    nationalId: { type: DataTypes.STRING, allowNull: false, unique: true },
+    phone: { type: DataTypes.STRING, allowNull: false, unique: true },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password: { type: DataTypes.STRING, allowNull: false },
     active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
