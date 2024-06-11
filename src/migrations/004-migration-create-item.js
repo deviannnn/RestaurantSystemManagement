@@ -35,11 +35,10 @@ module.exports = {
                 allowNull: true,
                 type: Sequelize.STRING,
             },
-            status: {
+            available: {
                 allowNull: false,
-                type: Sequelize.ENUM,
-                values: ['available', 'sold_out'],
-                defaultValue: 'available'
+                type: Sequelize.BOOLEAN,
+                defaultValue: true
             },
             active: {
                 allowNull: false,

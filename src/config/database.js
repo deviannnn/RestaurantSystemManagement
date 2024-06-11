@@ -14,7 +14,7 @@ module.exports = {
         },
         logging: false,
         query: { raw: true },
-        timezone: '+07:00'
+        timezone: process.env.TIMEZONE || '+07:00'
     },
     test: {
         username: process.env.CI_DB_USERNAME,
@@ -26,6 +26,7 @@ module.exports = {
         dialectOptions: {
             bigNumberStrings: true,
         },
+        timezone: process.env.TIMEZONE || '+07:00'
     },
     production: {
         username: process.env.PROD_DB_USERNAME,
@@ -40,5 +41,6 @@ module.exports = {
             //     ca: fs.readFileSync(__dirname + '/mysql-ca-main.crt'),
             // },
         },
+        timezone: process.env.TIMEZONE || '+07:00'
     },
 };
