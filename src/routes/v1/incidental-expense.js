@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const IEController = require('../../controllers/incidental-expense.controller');
+const IncExpenseController = require('../../controllers/incidental-expense.controller');
 
-router.post('/', IEController.createIE);
-router.get('/:id?', IEController.getIEs);
-router.put('/:id', IEController.updateIE);
-router.delete('/:id', IEController.deleteIE);
+router.post('/', IncExpenseController.createIncExpense);
+router.get('/:id?', IncExpenseController.getIncExpenses);
+router.put('/:id', IncExpenseController.updateIncExpense);
+router.delete('/:id', IncExpenseController.deleteIncExpense);
 
 module.exports = router;

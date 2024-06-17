@@ -1,11 +1,11 @@
-const IEService = require('../services/incidental-expense.service');
+const IncExpenseService = require('../services/incidental-expense.service');
 
-class IEController {
+class IncExpenseController {
     // Create a new incidental expense
-    static async createIE(req, res) {
+    static async createIncExpense(req, res) {
         try {
             const { paymentId, expenseId, paymentValue, expenseValue, amount } = req.body;
-            const newIncidentalExpense = await IEService.createIE(paymentId, expenseId, paymentValue, expenseValue, amount);
+            const newIncidentalExpense = await IncExpenseService.createIncExpense(paymentId, expenseId, paymentValue, expenseValue, amount);
             res.status(201).json(newIncidentalExpense);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -13,18 +13,18 @@ class IEController {
     }
 
     // Get all incidental expenses or get incidental expense by ID
-    static async getIEs(req, res) {
+    static async getIncExpenses(req, res) {
         try {
             const { id } = req.params;
             if (id) {
-                const incidentalExpense = await IEService.getIEById(id);
+                const incidentalExpense = await IncExpenseService.getIncExpenseById(id);
                 if (incidentalExpense) {
                     res.status(200).json(incidentalExpense);
                 } else {
                     res.status(404).json({ error: 'Incidental expense not found' });
                 }
             } else {
-                const incidentalExpenses = await IEService.getAllIEs();
+                const incidentalExpenses = await IncExpenseService.getAllIncExpenses();
                 res.status(200).json(incidentalExpenses);
             }
         } catch (error) {
@@ -33,11 +33,11 @@ class IEController {
     }
 
     // Update incidental expense by ID
-    static async updateIE(req, res) {
+    static async updateIncExpense(req, res) {
         try {
             const { id } = req.params;
             const { paymentId, expenseId, paymentValue, expenseValue, amount } = req.body;
-            const updatedIncidentalExpense = await IEService.updateIE(id, paymentId, expenseId, paymentValue, expenseValue, amount);
+            const updatedIncidentalExpense = await IncExpenseService.updateIncExpense(id, paymentId, expenseId, paymentValue, expenseValue, amount);
             if (updatedIncidentalExpense) {
                 res.status(200).json(updatedIncidentalExpense);
             } else {
@@ -49,10 +49,10 @@ class IEController {
     }
 
     // Delete incidental expense by ID
-    static async deleteIE(req, res) {
+    static async deleteIncExpense(req, res) {
         try {
             const { id } = req.params;
-            const deletedIncidentalExpense = await IEService.deleteIE(id);
+            const deletedIncidentalExpense = await IncExpenseService.deleteIncExpense(id);
             if (deletedIncidentalExpense) {
                 res.status(200).json(deletedIncidentalExpense);
             } else {
@@ -64,4 +64,4 @@ class IEController {
     }
 }
 
-module.exports = IEController;
+module.exports = IncExpenseController;

@@ -41,7 +41,7 @@ class OrderService {
         const order = await Order.findByPk(id);
         if (order) {
             await Order.destroy({ where: { id } });
-            return order.get({ plain: true });
+            return order;
         }
         return null;
     }

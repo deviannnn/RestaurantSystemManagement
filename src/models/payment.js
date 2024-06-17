@@ -21,10 +21,10 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'order'
             });
 
-            // this.hasMany(models.PaymentSurcharge, {
-            //     foreignKey: 'paymentId',
-            //     as: 'paymentSurcharges'
-            // });
+            this.hasMany(models.IncExpense, {
+                foreignKey: 'paymentId',
+                as: 'incExpense'
+            });
         }
     }
 

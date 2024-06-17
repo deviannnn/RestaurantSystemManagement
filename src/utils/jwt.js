@@ -1,6 +1,22 @@
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 
+const generateActiveToken = (userID) => {
+    try {
+        const payload = { id: userID };
+        const token = jwt.sign(
+            payload,
+            secretKey,
+            { algorithm: 'HS256', expiresIn: '24h' }
+        );
+
+        return token;
+    } catch (error) {
+        console.error('Error generating JWT:', error.message);
+        throw error;
+    }
+};
+
 const generateJWT = async (account, source) => {
     try {
         let expiresIn = '24h';
@@ -52,4 +68,4 @@ const decodeToken = async (token) => {
     }
 };
 
-module.exports = { generateJWT, extractToken, decodeToken };
+module.exports = { generateActiveToken, generateJWT, extractToken, decodeToken };

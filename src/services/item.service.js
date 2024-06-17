@@ -26,7 +26,7 @@ class ItemService {
         const item = await Item.findByPk(id);
         if (item) {
             await Item.destroy({ where: { id } });
-            return item.get({ plain: true });
+            return item;
         }
         return null;
     }

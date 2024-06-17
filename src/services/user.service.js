@@ -1,7 +1,7 @@
 require('dotenv').config();
-const {User} = require('../models'); // Assuming you have a User model
+const { User } = require('../models'); // Assuming you have a User model
 const { generateJWT } = require('../utils/jwt');
-const generateVerificationEmail = require('../utils/emailTemplate');
+const generateVerificationEmail = require('../utils/mail-template');
 const { revokedTokens } = require('../middlewares/auth')
 const amqp = require('amqplib');
 
@@ -35,7 +35,7 @@ class UserService {
         return null;
     }
 
-    static async deleteUser(id){
+    static async deleteUser(id) {
         const user = await User.findByPk(id);
         if (user) {
             await User.destroy({ where: { id } });
@@ -63,44 +63,6 @@ class UserService {
             await user.save();
         } catch (error) {
             throw new Error('Error verifyaAccount');
-        }
-    }
-
-    static async sendemailverifyAccount(newUser) {
-        try {
-            const hostName = process.env.HOST_NAME;
-            const port = process.env.PORT;
-            const domain = `http://${hostName}:${port}`;
-
-            const token = await generateJWT(newUser, 'password_change');
-            console.log('generateJWT...');
-
-            const link = `${domain}/active?token=${token}`
-            const email = newUser.email;
-            const mailSubject = 'Account successfully created';
-            const mailHtml = generateVerificationEmail(newUser, link);
-
-            const message = { email, mailSubject, mailHtml };
-
-            console.log('Connecting to RabbitMQ...');
-            // Kết nối tới RabbitMQ trong Docker
-            const connection = await amqp.connect('amqp://guest:guest@localhost:5672');
-            const channel = await connection.createChannel();
-            const queue = 'email_queue';
-
-            // Đảm bảo hàng đợi tồn tại
-            await channel.assertQueue(queue, { durable: false });
-
-            // Gửi tin nhắn vào hàng đợi
-            channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
-
-            // Đóng kết nối
-            setTimeout(() => {
-                connection.close();
-            }, 500);
-        } catch (error) {
-            console.log(error.message);
-            throw new Error('Error send email verifyaAccount');
         }
     }
 }
