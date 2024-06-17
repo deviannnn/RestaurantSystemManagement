@@ -5,7 +5,7 @@ const authenticate = async (req, res, next) => {
     const token = extractToken(req);
 
     if (!token) {
-        return res.redirect('/login');
+        return res.status(400).json({ message: '/login' });
     }
 
     try {
@@ -13,17 +13,18 @@ const authenticate = async (req, res, next) => {
         req.user = decoded;
         return next();
     } catch (error) {
-        return res.redirect('/login');
+        return res.status(400).json({ message: 'Xac thuc khong thanh cong' });
     }
 }
 
 const checkRevokedToken = (req, res, next) => {
-    const token = req.cookies['jwt'];
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (revokedTokens.has(token)) {
-        return res.redirect('/login');
+        return res.status(400).json({ message: 'Token khong ton tai -> /login' });
     }
-
+    
     next();
 };
 
@@ -36,10 +37,10 @@ const isPasswordChange = (req, res, next) => {
 };
 
 const isLoggedIn = (req, res, next) => {
-    if (req.user && req.user.actived && !req.user.locked && req.user.source === 'login') {
+    if (req.user && req.user.active && !req.user.locked && req.user.source === 'login') {
         return next();
     } else {
-        return res.redirect('/login');
+        return res.status(400).json({ message: '/login' });
     }
 };
 

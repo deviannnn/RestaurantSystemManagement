@@ -4,6 +4,7 @@ const { generateJWT } = require('../utils/jwt');
 const generateVerificationEmail = require('../utils/mail-template');
 const { revokedTokens } = require('../middlewares/auth')
 const amqp = require('amqplib');
+const bcrypt = require('bcrypt');
 
 class UserService {
     static async createUser(userData) {
@@ -13,6 +14,10 @@ class UserService {
         } catch (error) {
             throw new Error('Error register');
         }
+    }
+
+    static async getUserByRefreshToken(refreshToken) {
+        return await User.findOne({ where: { refreshToken } });
     }
 
     static async getUserByEmail(email) {
@@ -35,6 +40,15 @@ class UserService {
         return null;
     }
 
+    static async updateUserRefreshToken(id, refreshToken) {
+        return await User.update({ refreshToken }, { where: { id } });
+    }
+
+    static async deleteUserRefreshToken(id) {
+        return await User.update({ refreshToken: null }, { where: { id } });
+    }
+
+    
     static async deleteUser(id) {
         const user = await User.findByPk(id);
         if (user) {

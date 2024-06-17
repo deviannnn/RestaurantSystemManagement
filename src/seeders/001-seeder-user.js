@@ -14,6 +14,7 @@ module.exports = {
         email: 'admin@example.com',
         password: 'admin123',
         active: true,
+        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -26,6 +27,7 @@ module.exports = {
         email: 'manager@example.com',
         password: 'manager123',
         active: true,
+        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -38,6 +40,7 @@ module.exports = {
         email: 'cashier@example.com',
         password: 'cashier123',
         active: true,
+        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -50,6 +53,7 @@ module.exports = {
         email: 'staff@example.com',
         password: 'staff123',
         active: true,
+        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       }

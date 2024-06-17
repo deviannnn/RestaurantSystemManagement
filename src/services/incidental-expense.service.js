@@ -41,7 +41,7 @@ class IncExpenseService {
         const incidentalExpense = await IncExpense.findByPk(id);
         if (incidentalExpense) {
             await IncExpense.destroy({ where: { id } });
-            return incidentalExpense.get({ plain: true });
+            return incidentalExpense;
         }
         return null;
     }

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
+const secretKeyRefreshToken = process.env.JWT_SECRET_REFRESHTOKEN;
 
 const generateActiveToken = (userID) => {
     try {
@@ -19,10 +20,13 @@ const generateActiveToken = (userID) => {
 
 const generateJWT = async (account, source) => {
     try {
-        let expiresIn = '24h';
+        let expiresIn = '3m';
 
-        if (source === 'password_change') {
-            expiresIn = '1m';
+        // if (source === 'password_change') {
+        //     expiresIn = '5m';
+        // }
+        if (source === 'login') {
+            expiresIn = '3m';
         }
 
         const token = await jwt.sign(
@@ -36,6 +40,33 @@ const generateJWT = async (account, source) => {
                 source: source
             },
             secretKey,
+            {
+                algorithm: 'HS256',
+                expiresIn: expiresIn
+            }
+        );
+        return token;
+    } catch (error) {
+        console.error('Error generating JWT:', error.message);
+        throw error;
+    }
+};
+
+const generateRefreshToken = async (account, source) => {
+    try {
+        let expiresIn = '30d'
+
+        const token = await jwt.sign(
+            {
+                id: account.id,
+                roleId: account.roleId,
+                email: account.email,
+                fullName: account.fullName,
+                phone: account.phone,
+                active: account.active,
+                source: source
+            },
+            secretKeyRefreshToken,
             {
                 algorithm: 'HS256',
                 expiresIn: expiresIn
@@ -68,4 +99,4 @@ const decodeToken = async (token) => {
     }
 };
 
-module.exports = { generateActiveToken, generateJWT, extractToken, decodeToken };
+module.exports = { generateActiveToken, generateJWT, generateRefreshToken, extractToken, decodeToken };
