@@ -24,7 +24,8 @@ module.exports = (sequelize, DataTypes) => {
     phone: { type: DataTypes.STRING, allowNull: false, unique: true },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password: { type: DataTypes.STRING, allowNull: false },
-    active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
+    active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    refreshToken: { type: DataTypes.STRING, allowNull: true }
   }, {
     sequelize,
     modelName: 'User',

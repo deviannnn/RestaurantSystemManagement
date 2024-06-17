@@ -41,7 +41,7 @@ class PaymentService {
         const payment = await Payment.findByPk(id);
         if (payment) {
             await Payment.destroy({ where: { id } });
-            return payment.get({ plain: true });
+            return payment;
         }
         return null;
     }

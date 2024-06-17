@@ -41,7 +41,7 @@ class IEService {
         const incidentalExpense = await IncidentalExpense.findByPk(id);
         if (incidentalExpense) {
             await IncidentalExpense.destroy({ where: { id } });
-            return incidentalExpense.get({ plain: true });
+            return incidentalExpense;
         }
         return null;
     }

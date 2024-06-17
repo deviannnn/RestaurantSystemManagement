@@ -26,7 +26,7 @@ class ExpenseService {
         const expense = await Expense.findByPk(id);
         if (expense) {
             await Expense.destroy({ where: { id } });
-            return expense.get({ plain: true });
+            return expense;
         }
         return null;
     }

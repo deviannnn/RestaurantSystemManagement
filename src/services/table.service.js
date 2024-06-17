@@ -26,7 +26,7 @@ class TableService {
         const table = await Table.findByPk(id);
         if (table) {
             await Table.destroy({ where: { id } });
-            return table.get({ plain: true });
+            return table;
         }
         return null;
     }

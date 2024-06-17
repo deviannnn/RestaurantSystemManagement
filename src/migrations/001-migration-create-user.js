@@ -51,6 +51,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },
+      refreshToken: { 
+        type: Sequelize.STRING(1000), 
+        allowNull: true 
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

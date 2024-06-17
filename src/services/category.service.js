@@ -26,7 +26,7 @@ class CategoryService {
         const category = await Category.findByPk(id);
         if (category) {
             await Category.destroy({ where: { id } });
-            return category.get({ plain: true });
+            return category;
         }
         return null;
     }

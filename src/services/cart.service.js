@@ -41,7 +41,7 @@ class CartService {
         const cart = await Cart.findByPk(id);
         if (cart) {
             await Cart.destroy({ where: { id } });
-            return cart.get({ plain: true });
+            return cart;
         }
         return null;
     }
