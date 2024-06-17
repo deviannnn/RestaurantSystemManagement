@@ -4,7 +4,7 @@ const {
     Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-    class IncidentalExpense extends Model {
+    class IncExpense extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -23,14 +23,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    IncidentalExpense.init({
+    IncExpense.init({
         paymentValue: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         expenseValue: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         amount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 }
     }, {
         sequelize,
-        modelName: 'IncidentalExpense',
+        modelName: 'IncExpense',
     });
 
-    return IncidentalExpense;
+    return IncExpense;
 };

@@ -1,6 +1,7 @@
 const UserService = require('../services/user.service');
-const { generateJWT, generateJWTRefreshToken} = require('../utils/jwt');
-const { revokedTokens} = require('../middlewares/auth');
+const MailService = require('../services/mail.service');
+const { sendToQueue } = require('../config/producer');
+const jwt = require('../utils/jwt');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
@@ -8,18 +9,19 @@ class UserController {
     static async register(req, res) {
         const { roleId, fullName, gender, nationalId, phone, email } = req.body;
         const userData = { roleId, fullName, gender, nationalId, phone, email };
+
         try {
-            const find = await UserService.getUserByEmail(userData.email)
-            if(find){
+            const existingUser = await UserService.getUserByEmail(userData.email);
+            if (existingUser) {
                 return res.status(400).json({ message: 'User already exists' });
             }
 
             userData.password = await bcrypt.hash(userData.phone, 10);
-
             const newUser = await UserService.createUser(userData);
 
-            if(newUser){
-                await UserService.sendemailverifyAccount(newUser);
+            if (newUser) {
+                const mailComposer = MailService.composeActiveMail(newUser.id, newUser.fullName, newUser.gender, newUser.email, newUser.phone);
+                await sendToQueue('send_email', JSON.stringify(mailComposer));
                 return res.status(201).json({ msg: 'Complete register!' });
             }
         } catch (error) {
@@ -110,16 +112,15 @@ class UserController {
             if (!user) {
                 return res.status(400).json({ message: 'User not found!' });
             }
+          
             if(!bcrypt.compareSync(userData.password, user.password)){
                 return res.status(400).json({ message: 'Invalid username or password!' });
             }
             
-            const token = await generateJWT(user, 'login');
-
-            const refreshToken = await generateJWTRefreshToken(user);
+            const token = await jwt.generateJWT(user, 'login');
+            const refreshToken = await jwt.generateRefreshToken(user);
             
             await UserService.updateUserRefreshToken(user.id, refreshToken);
-
             res.status(200).json({ message: 'Login successfull!' , token, refreshToken})
 
             return token;

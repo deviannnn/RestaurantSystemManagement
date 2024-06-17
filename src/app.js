@@ -4,9 +4,13 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const send = require('./config/sendmailrabbitmq') //test send email
-const indexRoutes = require('./routes/index');
+
 const convertTimezone = require('./middlewares/timezone');
+const connectDB = require('./config/connectDB');
+const connectRabbitMQ = require('./config/rabbitmq');
+
+connectDB(); //Test Database connection
+connectRabbitMQ(); //Test Connect to RabbitMQ
 
 const app = express();
 
@@ -17,12 +21,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(convertTimezone);
 
-app.use('/api', indexRoutes);
+app.use('/api', require('./routes'));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) { next(createError(404)); });
-
-send();
 
 // error handler
 app.use(function (err, req, res, next) {

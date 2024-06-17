@@ -1,13 +1,13 @@
-const { IncidentalExpense, Payment, Expense } = require('../models');
+const { IncExpense, Payment, Expense } = require('../models');
 
-class IEService {
-    static async createIE(paymentId, expenseId, paymentValue, expenseValue, amount) {
-        return IncidentalExpense.create({ paymentId, expenseId, paymentValue, expenseValue, amount })
-            .then(newIncidentalExpense => newIncidentalExpense.get({ plain: true }));
+class IncExpenseService {
+    static async createIncExpense(paymentId, expenseId, paymentValue, expenseValue, amount) {
+        return IncExpense.create({ paymentId, expenseId, paymentValue, expenseValue, amount })
+            .then(newIncExpense => newIncExpense.get({ plain: true }));
     }
 
-    static async getIEById(id) {
-        return IncidentalExpense.findByPk(id, {
+    static async getIncExpenseById(id) {
+        return IncExpense.findByPk(id, {
             include: [
                 { model: Payment, as: 'payment' },
                 { model: Expense, as: 'expense' }
@@ -15,8 +15,8 @@ class IEService {
         });
     }
 
-    static async getAllIEs() {
-        return IncidentalExpense.findAll({
+    static async getAllIncExpenses() {
+        return IncExpense.findAll({
             include: [
                 { model: Payment, as: 'payment' },
                 { model: Expense, as: 'expense' }
@@ -24,10 +24,10 @@ class IEService {
         });
     }
 
-    static async updateIE(id, paymentId, expenseId, paymentValue, expenseValue, amount) {
-        const [updated] = await IncidentalExpense.update({ paymentId, expenseId, paymentValue, expenseValue, amount }, { where: { id } });
+    static async updateIncExpense(id, paymentId, expenseId, paymentValue, expenseValue, amount) {
+        const [updated] = await IncExpense.update({ paymentId, expenseId, paymentValue, expenseValue, amount }, { where: { id } });
         if (updated) {
-            return IncidentalExpense.findByPk(id, {
+            return IncExpense.findByPk(id, {
                 include: [
                     { model: Payment, as: 'payment' },
                     { model: Expense, as: 'expense' }
@@ -37,14 +37,14 @@ class IEService {
         return null;
     }
 
-    static async deleteIE(id) {
-        const incidentalExpense = await IncidentalExpense.findByPk(id);
+    static async deleteIncExpense(id) {
+        const incidentalExpense = await IncExpense.findByPk(id);
         if (incidentalExpense) {
-            await IncidentalExpense.destroy({ where: { id } });
+            await IncExpense.destroy({ where: { id } });
             return incidentalExpense;
         }
         return null;
     }
 }
 
-module.exports = IEService;
+module.exports = IncExpenseService;
