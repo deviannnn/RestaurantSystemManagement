@@ -1,0 +1,32 @@
+{
+  "name": "restaurantsystemmanagement",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./src/bin/www",
+    "dev": "nodemon ./src/bin/www"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "date-fns-tz": "^3.1.3",
+    "debug": "~2.6.9",
+    "dotenv": "^16.4.5",
+    "express": "~4.19.2",
+    "express-session": "^1.18.0",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "~1.9.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.10.0",
+    "sequelize": "^6.37.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3",
+    "sequelize-cli": "^6.6.2"
+  },
+  "description": "npx sequelize-cli db:migrate",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
