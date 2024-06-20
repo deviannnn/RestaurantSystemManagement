@@ -1,36 +1,38 @@
 version: '3.8'
 
 services:
-  db-mysql:
+  # order-service:
+  #   build: ./order-service
+  #   ports:
+  #     - "5003:5003"
+
+  order-db-mysql:
     image: mysql:8.4.0
     restart: always
     environment:
-      - MYSQL_DATABASE=restaurant_system
+      - MYSQL_DATABASE=restaurant_system_order
       - MYSQL_ROOT_PASSWORD=123456
     ports:
-      - "3307:3306"
+      - "3309:3306"
     volumes:
-      - db-data:/var/lib/mysql
+      - order-db-data:/var/lib/mysql
 
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+  # payment-service:
+  #   build: ./payment-service
+  #   ports:
+  #     - "5004:5004"
+
+  payment-db-mysql:
+    image: mysql:8.4.0
+    restart: always
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-
-  redis:
-    image: redis:7.2.5
+      - MYSQL_DATABASE=restaurant_system_payment
+      - MYSQL_ROOT_PASSWORD=123456
     ports:
-      - "6379:6379"
+      - "3310:3306"
     volumes:
-      - redis-data:/data
+      - payment-db-data:/var/lib/mysql
 
 volumes:
-  db-data:
-  rabbitmq-data:
-  redis-data:
+  order-db-data:
+  payment-db-data:
