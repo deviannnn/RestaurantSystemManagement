@@ -7,7 +7,7 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
 module.exports = async () => {
     try {
         await sequelize.authenticate();
-        console.log('MySQL connection established');
+        console.log(`MySQL connection established on port ${config.port}`);
     } catch (error) {
         console.error('Failed to connect to MySQL', error);
     }

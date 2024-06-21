@@ -15,6 +15,16 @@ module.exports = {
         }
     },
 
+    async bulkCreateOrderItems(orderItems) {
+        try {
+            const createdOrderItems = await OrderItem.bulkCreate(orderItems);
+            return createdOrderItems;
+        } catch (error) {
+            console.error('Error creating order items:', error);
+            throw error;
+        }
+    },
+
     async getOrderItemById(id) {
         try {
             return await OrderItem.findByPk(id, {
@@ -28,11 +38,24 @@ module.exports = {
 
     async getAllOrderItems() {
         try {
-            return await OrderItem.findAll({
-                include: includeOptions
-            });
+            return await OrderItem.findAll();
         } catch (error) {
             console.error('Error getting all order items:', error);
+            throw error;
+        }
+    },
+
+    async getByOrderIdAndItemId(orderId, itemId) {
+        try {
+            const orderItem = await OrderItem.findOne({
+                where: {
+                    orderId,
+                    itemId
+                }
+            });
+            return orderItem;
+        } catch (error) {
+            console.error('Error getting order item by orderId and itemId:', error);
             throw error;
         }
     },
