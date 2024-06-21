@@ -37,7 +37,7 @@ module.exports = {
         }
     },
 
-    async updateOrderItem(id, orderId, itemId, quantity, price, amount, note, status, active) {
+    async updateOrderItem({ id, orderId, itemId, quantity, price, amount, note, status, active }) {
         try {
             const [updated] = await OrderItem.update(
                 { orderId, itemId, quantity, price, amount, note, status, active },
