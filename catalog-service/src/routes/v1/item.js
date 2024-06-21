@@ -7,4 +7,8 @@ router.get('/:id?', ItemController.getItems);
 router.put('/:id', ItemController.updateItem);
 router.delete('/:id', ItemController.deleteItem);
 
+router.post('/toggle/:id', ItemController.toggleAvailable);
+router.get('/categories/:categoryId', ItemController.getItemsByCategories);
+
+
 module.exports = router;

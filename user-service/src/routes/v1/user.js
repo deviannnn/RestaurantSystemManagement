@@ -10,6 +10,8 @@ router.post('/login', UserController.login);
 
 router.post('/refresh-token', UserController.refreshToken);
 
+router.post('/resetpassword', UserController.resetPassword);
+
 // router.use(auth.authenticate);
 
 //router.use(auth.checkRevokedToken);

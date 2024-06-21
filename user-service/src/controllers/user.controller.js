@@ -5,6 +5,7 @@ const { sendToQueue } = require('../config/producer');
 const jwt = require('../utils/jwt');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const generatePassword = require('generate-password');
 
 const domain = `http://${process.env.HOST_NAME}:${process.env.PORT}`;
 
@@ -39,6 +40,42 @@ class UserController {
                 await sendToQueue('send_email', JSON.stringify(mailContent));
                 return res.status(201).json({ msg: 'Complete register!' });
             }
+        } catch (error) {
+            console.log(error.message);
+            return res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async resetPassword(req, res) {
+        try {
+            const {email} = req.body;
+            const userData = await UserService.getUserByEmail(email);
+
+            if(userData){
+                const newPassword = generatePassword.generate({
+                    length: 10,
+                    numbers: true
+                });
+
+                const hashNewPassword = await bcrypt.hash(newPassword, 10);
+                
+                await UserService.updatePasswordUser(email, hashNewPassword);
+
+                const mailContent = {
+                    type: 'resetpassword',
+                    fullName: userData.fullName,
+                    gender: userData.gender,
+                    email: userData.email,
+                    password: newPassword
+                }
+
+                await sendToQueue('send_email', JSON.stringify(mailContent));
+                return res.status(201).json({ msg: 'Complete reset password!' });
+            }
+            else{
+                res.status(404).json({ error: 'Email not found' });
+            } 
+                
         } catch (error) {
             console.log(error.message);
             return res.status(500).json({ error: error.message });

@@ -26,12 +26,15 @@ amqp.connect('amqp://admin:admin@localhost:5672', (err, conn) => {
         ch.assertQueue('send_email', { durable: true });
         ch.consume('send_email', async (msg) => {
             console.log(`Message received from send_email: ${msg.content.toString()}`);
-
-            const { type, fullName, gender, email, phone, link } = JSON.parse(msg.content.toString());
-
+            
+            const { type, fullName, gender, email, password, phone, link } = JSON.parse(msg.content.toString());
             let mailComposer = null;
+            
             if (type === 'active') {
                 mailComposer = MailService.composeActiveMail(fullName, gender, email, phone, link);
+            }
+            if (type === 'resetpassword') {
+                mailComposer = MailService.composeResetPasswordMail(fullName, gender, email, password);
             }
             
             await MailService.sendEmail(mailComposer);

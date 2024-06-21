@@ -17,6 +17,39 @@ class ItemController {
         }
     ];
 
+    static async toggleAvailable(req, res) {
+        try {
+            const { id } = req.params;
+            const { available } = req.body;
+
+            const toggledItem = await ItemService.updateItem({ id, available });
+            if (toggledItem) {
+                res.status(200).json(toggledItem);
+            } else {
+                res.status(404).json({ error: 'Item not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Get all items by categories
+    static async getItemsByCategories(req, res) {
+        try {
+            const { categoryId } = req.params;
+            if (categoryId) {
+                const menu = await ItemService.getAllItemsByCaterogies(categoryId);
+                if (menu) {
+                    return res.status(200).json(menu);
+                } else {
+                    return res.status(404).json({ error: 'Categories ID not found' });
+                }
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // Get all items or get item by ID
     static async getItems(req, res) {
         try {
@@ -39,13 +72,14 @@ class ItemController {
 
     // Update item by ID
     static updateItem = [
-        upload.single('image'), // Middleware xử lý upload ảnh
+        // upload.single('image'), // Middleware xử lý upload ảnh
         async (req, res) => {
             try {
                 const { id } = req.params;
                 const { name, price, description, available, active, categoryId } = req.body;
-                const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
-                const updatedItem = await ItemService.updateItem(id, name, price, image, description, available, active, categoryId);
+                //const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
+                const image = 'temp.png';
+                const updatedItem = await ItemService.updateItem({ id, name, price, image, description, available, active, categoryId });
                 if (updatedItem) {
                     res.status(200).json(updatedItem);
                 } else {

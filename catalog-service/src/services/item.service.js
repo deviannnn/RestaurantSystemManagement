@@ -14,7 +14,13 @@ class ItemService {
         return Item.findAll();
     }
 
-    static async updateItem(id, name, price, image, description, available, active, categoryId) {
+    static async getAllItemsByCaterogies(categoryId) {
+        return Item.findAll({
+            where: { categoryId: categoryId }
+        });
+    }
+
+    static async updateItem({ id, name, price, image, description, available, active, categoryId }) {
         const [updated] = await Item.update({ name, price, image, description, available, active, categoryId }, { where: { id } });
         if (updated) {
             return Item.findByPk(id);
