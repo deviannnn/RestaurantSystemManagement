@@ -32,10 +32,18 @@ class UserService {
         return User.findAll();
     }
 
-    static async updateUser(id, roleId, fullName, gender, nationalId, phone, email) {
-        const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email }, { where: { id } });
+    static async updateUser(id, roleId, fullName, gender, nationalId, phone, email, password) {
+        const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password }, { where: { id } });
         if (updated) {
             return User.findByPk(id);
+        }
+        return null;
+    }
+
+    static async updatePasswordUser(email, password) {
+        const [updated] = await User.update({ email, password }, { where: { email } });
+        if (updated) {
+            return User.findByPk(email);
         }
         return null;
     }
