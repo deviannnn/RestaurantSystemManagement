@@ -1,76 +1,94 @@
 version: '3.8'
 
 services:
-  # catalog-db-mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_catalog
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3306:3306"
-  #   volumes:
-  #      - catalog-db-data:/var/lib/mysql
+  catalog-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_catalog
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3306:3306"
+    volumes:
+       - catalog-db-data:/var/lib/mysql
 
-  # table-db-mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_table
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3307:3306"
-  #   volumes:
-  #     - table-db-data:/var/lib/mysql
+  table-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_table
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - table-db-data:/var/lib/mysql
 
-  # user-db-mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_user
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3308:3306"
-  #   volumes:
-  #     - user-db-data:/var/lib/mysql
+  user-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_user
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3308:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
       
   # order-service:
   #   build: ./order-service
   #   ports:
   #     - "5003:5003" 
 
-  order-db-mysql:
-    image: mysql:8.4.0
-    restart: always
-    environment:
-      - MYSQL_DATABASE=restaurant_system_order
-      - MYSQL_ROOT_PASSWORD=123456
-    ports:
-      - "3309:3306"
-    volumes:
-      - order-db-data:/var/lib/mysql
+  # order-db-mysql:
+  #   image: mysql:8.4.0
+  #   restart: always
+  #   environment:
+  #     - MYSQL_DATABASE=restaurant_system_order
+  #     - MYSQL_ROOT_PASSWORD=123456
+  #   ports:
+  #     - "3309:3306"
+  #   volumes:
+  #     - order-db-data:/var/lib/mysql
       
   # payment-service:
   #   build: ./payment-service
   #   ports:
   #     - "5004:5004"
 
-  payment-db-mysql:
-    image: mysql:8.4.0
-    restart: always
-    environment:
-      - MYSQL_DATABASE=restaurant_system_payment
-      - MYSQL_ROOT_PASSWORD=123456
+  # payment-db-mysql:
+  #   image: mysql:8.4.0
+  #   restart: always
+  #   environment:
+  #     - MYSQL_DATABASE=restaurant_system_payment
+  #     - MYSQL_ROOT_PASSWORD=123456
+  #   ports:
+  #     - "3310:3306"
+  #   volumes:
+  #     - payment-db-data:/var/lib/mysql
+
+  rabbitmq:
+      image: rabbitmq:3.13-management
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      environment:
+        - RABBITMQ_DEFAULT_USER=admin
+        - RABBITMQ_DEFAULT_PASS=admin
+      volumes:
+        - rabbitmq-data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:7.2.5
     ports:
-      - "3310:3306"
+      - "6379:6379"
     volumes:
-      - payment-db-data:/var/lib/mysql
+      - redis-data:/data
 
 volumes:
-  # catalog-db-data:
-  # table-db-data:
-  # user-db-data:
-  order-db-data:
-  payment-db-data:
-  # rabbitmq-data:
-  # redis-data:
+  catalog-db-data:
+  table-db-data:
+  user-db-data:
+  # order-db-data:
+  # payment-db-data:
+  rabbitmq-data:
+  redis-data:
