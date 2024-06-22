@@ -6,7 +6,7 @@ const connectRedis = async () => {
     const client = redis.createClient({
         url: REDIS_URL
     });
-
+    
     return new Promise((resolve, reject) => {
         client.on('error', (err) => {
             console.error('Redis connection error:', err);

@@ -1,6 +1,7 @@
 const ItemService = require('../services/item.service');
 const upload = require('../middlewares/upload');
 const connectRedis = require('../config/redis');
+
 class ItemController {
     // Create a new item
     static createItem = [
@@ -65,16 +66,44 @@ class ItemController {
                 }
                 return res.status(300).json(item);
             } else {
+                // client.flushAll();
                 const getItemInRedis = await client.get(`items`);
                 if(getItemInRedis){
-                    res.status(200).json(getItemInRedis);
+                    res.status(200).json(JSON.parse(getItemInRedis));
                 }
                 else {
                     const allItems = await ItemService.getAllItems(id);
-                    await client.set(`items`, JSON.stringify(allItems), 'EX', 3600);
+                    await client.set(`items`, JSON.stringify(allItems), 'EX', 50);
                     res.status(300).json(allItems);
                 }
             }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async checkItemsAvailability(req, res) {
+        try {
+            const { itemId } = req.body;
+
+            if (!Array.isArray(itemId) || itemId.length === 0) {
+                return res.status(400).json({ error: 'Invalid input' });
+            }
+
+            let totalPrice = 0;
+
+            for (const id of itemId) {
+                const item = await ItemService.getItemById(id);
+    
+                if (!item || !item.available) {
+                    res.status(200).json(false);
+                    return false;
+                }
+    
+                totalPrice += item.price;
+            }
+            res.status(200).json({ available: true, totalPrice });
+            return true, totalPrice;
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
