@@ -34,27 +34,27 @@ services:
     volumes:
       - payment-db-data:/var/lib/mysql
       
-  # table-db-mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_table
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3310:3306"
-  #   volumes:
-  #     - table-db-data:/var/lib/mysql
+  table-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_table
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3310:3306"
+    volumes:
+      - table-db-data:/var/lib/mysql
 
-  # user-db-mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_user
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3311:3306"
-  #   volumes:
-  #     - user-db-data:/var/lib/mysql
+  user-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_user
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3311:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
 
   # order-service:
   #   build: ./order-service
@@ -65,12 +65,30 @@ services:
   #   build: ./payment-service
   #   ports:
   #     - "5004:5004"
+  
+  rabbitmq:
+      image: rabbitmq:3.13-management
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      environment:
+        - RABBITMQ_DEFAULT_USER=admin
+        - RABBITMQ_DEFAULT_PASS=admin
+      volumes:
+        - rabbitmq-data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:7.2.5
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      
 volumes:
   catalog-db-data:
   order-db-data:
   payment-db-data:
-    # table-db-data:
-    # user-db-data:
-    # rabbitmq-data:
-    # redis-data:
+  table-db-data:
+  user-db-data:
+  rabbitmq-data:
+  redis-data:

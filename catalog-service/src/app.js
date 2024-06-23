@@ -7,9 +7,11 @@ const logger = require('morgan');
 
 const convertTimezone = require('./middlewares/timezone');
 const connectDB = require('./config/connectDB');
+const connectRedis = require('./config/redis');
 // const connectRabbitMQ = require('./config/rabbitmq');
 
 connectDB(); //Test Database connection
+connectRedis();
 // connectRabbitMQ(); //Test Connect to RabbitMQ
 
 const app = express();

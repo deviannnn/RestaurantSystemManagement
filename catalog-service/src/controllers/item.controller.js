@@ -1,5 +1,6 @@
 const ItemService = require('../services/item.service');
 const upload = require('../middlewares/upload');
+const connectRedis = require('../config/redis');
 
 class ItemController {
     // Create a new item
@@ -33,16 +34,47 @@ class ItemController {
         }
     }
 
-    // Get all items by categories
     static async getItemsByCategories(req, res) {
         try {
             const { categoryId } = req.params;
-            if (categoryId) {
+            const client = await connectRedis();
+
+            const getItemInRedis = await client.get(`items:category:${categoryId}`);
+            if(getItemInRedis){
+                res.status(200).json(JSON.parse(getItemInRedis));
+            }
+            else{
                 const menu = await ItemService.getAllItemsByCaterogies(categoryId);
-                if (menu) {
-                    return res.status(200).json(menu);
-                } else {
-                    return res.status(404).json({ error: 'Categories ID not found' });
+                await client.set(`items:category:${categoryId}`, JSON.stringify(menu), 'EX', 3600);
+                return res.status(300).json(menu);
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+    
+
+    // Get all items or get item by ID
+    static async getItems(req, res) {
+        try {
+            const { id } = req.params;
+            const client = await connectRedis();
+            if (id) {
+                const item = await ItemService.getItemById(id);
+                if (!item) {
+                    return res.status(404).json({ error: 'Item not found' });
+                }
+                return res.status(300).json(item);
+            } else {
+                // client.flushAll();
+                const getItemInRedis = await client.get(`items`);
+                if(getItemInRedis){
+                    res.status(200).json(JSON.parse(getItemInRedis));
+                }
+                else {
+                    const allItems = await ItemService.getAllItems(id);
+                    await client.set(`items`, JSON.stringify(allItems), 'EX', 50);
+                    res.status(300).json(allItems);
                 }
             }
         } catch (error) {
@@ -50,21 +82,28 @@ class ItemController {
         }
     }
 
-    // Get all items or get item by ID
-    static async getItems(req, res) {
+    static async checkItemsAvailability(req, res) {
         try {
-            const { id } = req.params;
-            if (id) {
-                const item = await ItemService.getItemById(id);
-                if (item) {
-                    res.status(200).json(item);
-                } else {
-                    res.status(404).json({ error: 'Item not found' });
-                }
-            } else {
-                const items = await ItemService.getAllItems();
-                res.status(200).json(items);
+            const { itemId } = req.body;
+
+            if (!Array.isArray(itemId) || itemId.length === 0) {
+                return res.status(400).json({ error: 'Invalid input' });
             }
+
+            let totalPrice = 0;
+
+            for (const id of itemId) {
+                const item = await ItemService.getItemById(id);
+    
+                if (!item || !item.available) {
+                    res.status(200).json(false);
+                    return false;
+                }
+    
+                totalPrice += item.price;
+            }
+            res.status(200).json({ available: true, totalPrice });
+            return true, totalPrice;
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

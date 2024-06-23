@@ -11,10 +11,9 @@ const domain = `http://${process.env.HOST_NAME}:${process.env.PORT}`;
 
 class UserController {
     static async register(req, res) {
-        const { roleId, fullName, gender, nationalId, phone, email } = req.body;
-        const userData = { roleId, fullName, gender, nationalId, phone, email };
-
         try {
+            const { roleId, fullName, gender, nationalId, phone, email } = req.body;
+            const userData = { roleId, fullName, gender, nationalId, phone, email };
             // const existingUser = await UserService.getUserByEmail(userData.email);
             // if (existingUser) {
             //     return res.status(400).json({ message: 'User already exists' });
@@ -83,8 +82,8 @@ class UserController {
     }
 
     static async refreshToken(req, res) {
-        const { refreshToken } = req.body;
         try {
+            const { refreshToken } = req.body;
             if (!refreshToken) {
                 return res.status(401).json({ message: 'Refresh token is required' });
             }
@@ -158,9 +157,10 @@ class UserController {
     }
 
     static async login(req, res) {
-        const { email, password } = req.body;
-        const userData = { email, password };
         try {
+            const { email, password } = req.body;
+            const userData = { email, password };
+
             const user = await UserService.getUserByEmail(userData.email)
             if (!user) {
                 return res.status(400).json({ message: 'User not found!' });
@@ -183,10 +183,10 @@ class UserController {
     }
 
     static async logout(req, res) {
-        const token = req.headers.authorization.split(' ')[1];
-        console.log(token);
-
         try {
+            const token = req.headers.authorization.split(' ')[1];
+            console.log(token);
+            
             revokedTokens.add(token);
             console.log(revokedTokens);
             //const t = await UserService.deleteUserRefreshToken(userid);
