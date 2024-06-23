@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const { Order, OrderItem } = require('../models');
 
 const includeOptions = [
-    { model: OrderItem, as: 'item' }
+    { model: OrderItem, as: 'items' }
 ];
 
 module.exports = {

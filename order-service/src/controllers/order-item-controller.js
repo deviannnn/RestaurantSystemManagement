@@ -34,7 +34,7 @@ module.exports = {
         try {
             const { id } = req.params;
             const { orderId, itemId, quantity, price, amount, note, status, active } = req.body;
-            const updatedOrderItem = await OrderItemService.updateOrderItem(id, orderId, itemId, quantity, price, amount, note, status, active);
+            const updatedOrderItem = await OrderItemService.updateOrderItem({ id, orderId, itemId, quantity, price, amount, note, status, active });
             if (updatedOrderItem) {
                 res.status(200).json(updatedOrderItem);
             } else {
