@@ -40,10 +40,10 @@ class ItemController {
             const client = await connectRedis();
 
             const getItemInRedis = await client.get(`items:category:${categoryId}`);
-            if(getItemInRedis){
+            if (getItemInRedis) {
                 res.status(200).json(JSON.parse(getItemInRedis));
             }
-            else{
+            else {
                 const menu = await ItemService.getAllItemsByCaterogies(categoryId);
                 await client.set(`items:category:${categoryId}`, JSON.stringify(menu), 'EX', 3600);
                 return res.status(300).json(menu);
@@ -52,7 +52,7 @@ class ItemController {
             res.status(500).json({ error: error.message });
         }
     }
-    
+
 
     // Get all items or get item by ID
     static async getItems(req, res) {
@@ -68,8 +68,8 @@ class ItemController {
             } else {
                 // client.flushAll();
                 const getItemInRedis = await client.get(`items`);
-                if(getItemInRedis){
-                    res.status(200).json(JSON.parse(getItemInRedis));
+                if (getItemInRedis) {
+                    res.status(200).json({ success: true, data: JSON.parse(getItemInRedis) });
                 }
                 else {
                     const allItems = await ItemService.getAllItems(id);
@@ -82,28 +82,19 @@ class ItemController {
         }
     }
 
-    static async checkItemsAvailability(req, res) {
+    static async batchValidator(req, res) {
         try {
-            const { itemId } = req.body;
+            const { itemIds } = req.body; // Expecting an array of itemIds
+            const { validItems, invalidItems } = await ItemService.getItemsByListIds(itemIds);
 
-            if (!Array.isArray(itemId) || itemId.length === 0) {
-                return res.status(400).json({ error: 'Invalid input' });
+            if (invalidItems.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: { message: 'Some items are not valid', data: { items: invalidItems } }
+                });
             }
 
-            let totalPrice = 0;
-
-            for (const id of itemId) {
-                const item = await ItemService.getItemById(id);
-    
-                if (!item || !item.available) {
-                    res.status(200).json(false);
-                    return false;
-                }
-    
-                totalPrice += item.price;
-            }
-            res.status(200).json({ available: true, totalPrice });
-            return true, totalPrice;
+            res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

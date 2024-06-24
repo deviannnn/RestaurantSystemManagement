@@ -7,13 +7,12 @@
 var app = require('../app');
 var debug = require('debug')('restaurantsystemmanagement:server');
 var http = require('http');
-var KitchenService = require('../services/kitchen-service');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5002');
+var port = normalizePort(process.env.PORT || '5006');
 app.set('port', port);
 
 /**
@@ -29,22 +28,6 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
-
-/**
- * Handle SIGINT and SIGTERM to gracefully shutdown
- */
-
-process.on('SIGINT', async () => {
-  console.log('Received SIGINT. Shutting down gracefully...');
-  await KitchenService.closeConnection();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM. Shutting down gracefully...');
-  await KitchenService.closeConnection();
-  process.exit(0);
-});
 
 /**
  * Normalize a port into a number, string, or false.
@@ -103,6 +86,6 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('OrderService is listening on ' + bind);
-  console.log(`OrderService is listening on ${bind}`);
+  debug('NotificationService is listening on ' + bind);
+  console.log(`KitchentService is listening on ${bind}`);
 }

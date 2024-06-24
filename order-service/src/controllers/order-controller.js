@@ -1,6 +1,7 @@
 const axios = require('axios');
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
+const KitchenService = require('../services/kitchen-service');
 
 module.exports = {
     async createOrder(req, res) {
@@ -84,60 +85,78 @@ module.exports = {
             if (!order) {
                 return res.status(404).json('Order not found');
             }
-            
-            const itemPromises = items.map(async (item) => {
-                const { itemId, quantity, note } = item;
-                try {
-                    // Gọi API để lấy thông tin Item
-                    const itemResponse = await axios.get(`http://localhost:5000/api/v1/items/${itemId}`);
-                    const itemData = itemResponse.data;
-    
-                    if (!itemData) {
-                        throw new Error(`Item with id ${itemId} not found`);
-                    }
-    
-                    const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, itemId);
-                    if (existingOrderItem) {
-                        const newQuantity = existingOrderItem.quantity + quantity;
-                        const newAmount = newQuantity * itemData.price;
-                        await OrderItemService.updateOrderItem({ id: existingOrderItem.id, quantity: newQuantity, amount: newAmount });
-                        return null;
-                    } else {
-                        return {
-                            orderId,
-                            itemId,
-                            quantity,
-                            price: itemData.price,
-                            amount: quantity * itemData.price,
-                            note
-                        };
-                    }
-                } catch (error) {
-                    throw new Error(`Error fetching item with id ${itemId}: ${error.message}`);
+
+            let itemResponse;
+            try {
+                // Gọi API batch để kiểm tra các item
+                const itemIds = items.map(item => item.itemId);
+                itemResponse = await axios.post('http://localhost:5000/api/v1/items/batch', { itemIds });
+            } catch (error) {
+                if (error.response && error.response.status === 400) {
+                    return res.status(400).json(error.response.data);
+                } else {
+                    throw error;
+                }
+            }
+
+            const itemDatas = itemResponse.data.data.items;
+
+            // Thực hiện thêm hoặc cập nhật các mục trong đơn hàng
+            const orderItemsToCreate = [];
+            const orderItemPromises = items.map(async (item) => {
+                const itemData = itemDatas.find(data => data.id === item.itemId);
+                const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, item.itemId);
+                if (existingOrderItem) {
+                    const newQuantity = existingOrderItem.quantity + item.quantity;
+                    const newAmount = newQuantity * itemData.price;
+                    await OrderItemService.updateOrderItem({
+                        id: existingOrderItem.id,
+                        quantity: newQuantity,
+                        amount: newAmount
+                    });
+                } else {
+                    orderItemsToCreate.push({
+                        orderId,
+                        itemId: item.itemId,
+                        quantity: item.quantity,
+                        price: itemData.price,
+                        amount: item.quantity * itemData.price
+                    });
                 }
             });
 
-            const results = await Promise.allSettled(itemPromises);
+            await Promise.allSettled(orderItemPromises);
 
-            const errors = results.filter(result => result.status === 'rejected').map(result => result.reason);
-            if (errors.length > 0) {
-                return res.status(400).json({ error: errors.map(e => e.message) });
+            if (orderItemsToCreate.length > 0) {
+                await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
             }
-
-            // Loại bỏ các mục null (những mục đã được cập nhật)
-            const validOrderItemsToCreate = results
-                .filter(result => result.status === 'fulfilled' && result.value !== null)
-                .map(result => result.value);
-
-            if (validOrderItemsToCreate.length > 0) {
-                await OrderItemService.bulkCreateOrderItems(validOrderItemsToCreate);
-            }
-
-            // Pub to Kitchen Service { orderId, tableId, [{ itemId, quantity, note, createdAt }] }
 
             const updatedOrder = await OrderService.getOrderById(orderId);
-            res.status(200).json(updatedOrder);
+            res.status(200).json({ success: true, message: 'Items added to order successfully', data: { order: updatedOrder } });
+
+            // Chuẩn bị dữ liệu để gửi đến Kitchen Service
+            const kitchenServiceData = items.map(item => {
+                const itemData = itemDatas.find(data => data.id === item.itemId);
+                return {
+                    itemId: item.itemId,
+                    name: itemData.name,
+                    quantity: item.quantity,
+                    note: item.note,
+                    time: new Date()
+                };
+            });
+
+            await KitchenService.publishOrder({
+                orderId,
+                tableId: order.tableId,
+                userId: order.userId,
+                items: kitchenServiceData
+            }).catch(err => {
+                // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
+                console.error('Error publishing to Kitchen Service:', err);
+            });
         } catch (error) {
+            console.log(error.message);
             res.status(500).json({ error: error.message });
         }
     },
@@ -154,14 +173,12 @@ module.exports = {
 
                     if (existingOrderItem && existingOrderItem.orderId == orderId && existingOrderItem.status === 'pending') {
                         const newQuantity = quantity !== undefined ? quantity : existingOrderItem.quantity;
-                        const newNote = note !== undefined ? note : existingOrderItem.note;
                         const newAmount = newQuantity * existingOrderItem.price;
 
                         await OrderItemService.updateOrderItem({
                             id: existingOrderItem.id,
                             quantity: newQuantity,
-                            amount: newAmount,
-                            note: newNote
+                            amount: newAmount
                         });
                         return null;
                     } else if (!existingOrderItem) {
@@ -169,23 +186,22 @@ module.exports = {
                     } else if (existingOrderItem.orderId != orderId) {
                         throw new Error(`OrderItem with id ${orderItemId} does not belong to order ${orderId}`);
                     } else {
-                        throw new Error(`OrderItem with id ${orderItemId} is not in pending status`);
+                        throw new Error('This dish is being prepared, please contact the waiter for assistance');
                     }
                 } catch (error) {
-                    throw new Error(`Error processing orderItem with id ${orderItemId}: ${error.message}`);
+                    throw new Error(error);
                 }
             });
 
             const results = await Promise.allSettled(itemPromises);
-
+            console.log(results);
             const errors = results.filter(result => result.status === 'rejected').map(result => result.reason);
             if (errors.length > 0) {
-                return res.status(400).json({ error: errors.map(e => e.message) });
+                return res.status(400).json({ error: errors.map(e => e.dev) });
             }
 
             const updatedOrder = await OrderService.getOrderById(orderId);
             res.status(200).json(updatedOrder);
-
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

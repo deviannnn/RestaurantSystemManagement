@@ -5,9 +5,9 @@ const includeOptions = [
 ];
 
 module.exports = {
-    async createOrderItem(orderId, itemId, quantity, price, amount, note) {
+    async createOrderItem(orderId, itemId, quantity, price, amount) {
         try {
-            const newOrderItem = await OrderItem.create({ orderId, itemId, quantity, price, amount, note });
+            const newOrderItem = await OrderItem.create({ orderId, itemId, quantity, price, amount });
             return newOrderItem.get({ plain: true });
         } catch (error) {
             console.error('Error creating order item:', error);
@@ -60,10 +60,10 @@ module.exports = {
         }
     },
 
-    async updateOrderItem({ id, orderId, itemId, quantity, price, amount, note, status, active }) {
+    async updateOrderItem({ id, orderId, itemId, quantity, price, amount, status, active }) {
         try {
             const [updated] = await OrderItem.update(
-                { orderId, itemId, quantity, price, amount, note, status, active },
+                { orderId, itemId, quantity, price, amount, status, active },
                 { where: { id } }
             );
             if (updated) {

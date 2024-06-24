@@ -24,7 +24,6 @@ module.exports = (sequelize, DataTypes) => {
         quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         price: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         amount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-        note: { type: DataTypes.STRING, allowNull: true },
         status: {
             type: DataTypes.ENUM(...ALLOWED_STATUSES),
             allowNull: false,

@@ -38,10 +38,6 @@ module.exports = {
                 type: Sequelize.FLOAT,
                 defaultValue: 0
             },
-            note: {
-                allowNull: true,
-                type: Sequelize.STRING,
-            },
             status: {
                 allowNull: false,
                 type: Sequelize.ENUM,

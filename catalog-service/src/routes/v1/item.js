@@ -10,6 +10,6 @@ router.delete('/:id', ItemController.deleteItem);
 router.post('/toggle/:id', ItemController.toggleAvailable);
 router.get('/categories/:categoryId', ItemController.getItemsByCategories);
 
-router.post('/items',ItemController.checkItemsAvailability);
+router.post('/batch',ItemController.batchValidator);
 
 module.exports = router;
