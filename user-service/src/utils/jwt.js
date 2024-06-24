@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 const secretKeyRefreshToken = process.env.JWT_SECRET_REFRESHTOKEN;
+const revokedTokens = new Set();
 
 const generateActiveToken = (userID) => {
     try {
@@ -26,7 +27,7 @@ const generateJWT = async (account, source) => {
         //     expiresIn = '5m';
         // }
         if (source === 'login') {
-            expiresIn = '3m';
+            expiresIn = '30s';
         }
 
         const token = await jwt.sign(
@@ -99,4 +100,4 @@ const decodeToken = async (token) => {
     }
 };
 
-module.exports = { generateActiveToken, generateJWT, generateRefreshToken, extractToken, decodeToken };
+module.exports = { generateActiveToken, generateJWT, generateRefreshToken, extractToken, decodeToken, revokedTokens};

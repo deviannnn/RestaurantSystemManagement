@@ -1,10 +1,5 @@
 require('dotenv').config();
 const { User } = require('../models'); // Assuming you have a User model
-const { generateJWT } = require('../utils/jwt');
-const generateVerificationEmail = require('../utils/mail-template');
-const { revokedTokens } = require('../middlewares/auth')
-const amqp = require('amqplib');
-const bcrypt = require('bcrypt');
 
 class UserService {
     static async createUser(userData) {
@@ -17,74 +12,83 @@ class UserService {
     }
 
     static async getUserByRefreshToken(refreshToken) {
-        return await User.findOne({ where: { refreshToken } });
+        try {
+            return await User.findOne({ where: { refreshToken } });
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async getUserByEmail(email) {
-        return await User.findOne({ where: { email } });
+        try {   
+            return await User.findOne({ where: { email } });
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getUserByNationalId(nationalId) {
+        try {
+            return await User.findOne({ where: { nationalId } });
+        } catch (error) {
+            throw error;
+        }   
+    }
+
+    static async getUserByPhone(phone) {
+        try {
+            return await User.findOne({ where: { phone } });
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async getUserById(id) {
-        return User.findByPk(id);
+        try {
+            return User.findByPk(id);
+        } catch (error) {
+            throw error;
+        }    
     }
 
     static async getAllUsers() {
-        return User.findAll();
-    }
-
-    static async updateUser(id, roleId, fullName, gender, nationalId, phone, email, password) {
-        const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password }, { where: { id } });
-        if (updated) {
-            return User.findByPk(id);
+        try {
+            return User.findAll();
+        } catch (error) {
+            throw error;
         }
-        return null;
     }
 
-    static async updatePasswordUser(email, password) {
-        const [updated] = await User.update({ email, password }, { where: { email } });
-        if (updated) {
-            return User.findByPk(email);
+    static async updateUser({id, roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken}) {
+        try {
+            const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken}, { where: { id } });
+            if (updated) {
+                return User.findByPk(id);
+            }
+            return null;
+        } catch (error) {
+            throw error;
         }
-        return null;
-    }
-
-    static async updateUserRefreshToken(id, refreshToken) {
-        return await User.update({ refreshToken }, { where: { id } });
     }
 
     static async deleteUserRefreshToken(id) {
-        return await User.update({ refreshToken: null }, { where: { id } });
+        try {
+            return await User.update({ refreshToken: null }, { where: { id } });
+        } catch (error) {
+            throw error;
+        }
     }
 
-    
     static async deleteUser(id) {
-        const user = await User.findByPk(id);
-        if (user) {
-            await User.destroy({ where: { id } });
-            return user;
-        }
-        return null;
-    }
-
-    static async logout(token) {
         try {
-            // Invalidate the token (implementation depends on your token strategy)
-            await revokedTokens.add(token);
-        } catch (error) {
-            throw new Error('Error logout');
-        }
-    }
-
-    static async verifyAccount(token) {
-        try {
-            const user = await User.findOne({ verificationToken: token });
-            if (!user) {
-                throw new Error('Invalid token');
+            const user = await User.findByPk(id);
+            if (user) {
+                await User.destroy({ where: { id } });
+                return user;
             }
-            user.isVerified = true;
-            await user.save();
+            return null;
         } catch (error) {
-            throw new Error('Error verifyaAccount');
+            throw error;
         }
     }
 }

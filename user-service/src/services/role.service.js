@@ -2,33 +2,53 @@ const { Role } = require('../models');
 
 class RoleService {
     static async createRole(name, active) {
-        return Role.create({ name, active })
+        try {
+            return Role.create({ name, active })
             .then((newRole) => newRole.get({ plain: true }));
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async getRoleById(id) {
-        return Role.findByPk(id);
+        try {
+            return Role.findByPk(id);
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async getAllRoles() {
-        return Role.findAll();
+        try {
+            return Role.findAll();
+        } catch (error) {
+            throw error;
+        }
     }
 
     static async updateRole(id, name, active) {
-        const [updated] = await Role.update({ name, active }, { where: { id } });
-        if (updated) {
-            return Role.findByPk(id);
+        try {
+            const [updated] = await Role.update({ name, active }, { where: { id } });
+            if (updated) {
+                return Role.findByPk(id);
+            }
+            return null;
+        } catch (error) {
+            throw error;
         }
-        return null;
     }
 
     static async deleteRole(id) {
-        const role = await Role.findByPk(id);
-        if (role) {
-            await Role.destroy({ where: { id } });
-            return role;
+        try {
+            const role = await Role.findByPk(id);
+            if (role) {
+                await Role.destroy({ where: { id } });
+                return role;
+            }
+            return null;
+        } catch (error) {
+            throw error;
         }
-        return null;
     }
 }
 
