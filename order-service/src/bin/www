@@ -7,7 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('restaurantsystemmanagement:server');
 var http = require('http');
-var KitchenService = require('../services/kitchen-service');
+const RabbitMQ = require('../config/rabbitmq');
 
 /**
  * Get port from environment and store in Express.
@@ -36,13 +36,13 @@ server.on('listening', onListening);
 
 process.on('SIGINT', async () => {
   console.log('Received SIGINT. Shutting down gracefully...');
-  await KitchenService.closeConnection();
+  await RabbitMQ.closeConnection();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('Received SIGTERM. Shutting down gracefully...');
-  await KitchenService.closeConnection();
+  await RabbitMQ.closeConnection();
   process.exit(0);
 });
 

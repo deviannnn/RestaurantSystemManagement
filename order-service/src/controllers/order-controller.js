@@ -1,7 +1,7 @@
 const axios = require('axios');
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
-const KitchenService = require('../services/kitchen-service');
+const RabbitMQService = require('../services/rabbitmq-service');
 
 module.exports = {
     async createOrder(req, res) {
@@ -145,8 +145,8 @@ module.exports = {
                     time: new Date()
                 };
             });
-
-            await KitchenService.publishOrder({
+            
+            await RabbitMQService.pubOrderItem({
                 orderId,
                 tableId: order.tableId,
                 userId: order.userId,

@@ -6,9 +6,9 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
 const convertTimezone = require('./middlewares/timezone');
-const connectDB = require('./config/connectDB');
+const connectdb = require('./config/connectdb');
 
-connectDB(); //Test Database connection
+connectdb(); //Test Database connection
 
 const app = express();
 
@@ -31,11 +31,45 @@ app.use(function (err, req, res, next) {
     const getError = (status) => {
         switch (status) {
             case 401:
-                return { status: 401, error: 'Unauthorized', message: 'Your login session has expired. You are not allowed to access this resource.' };
+                return {
+                    success: false,
+                    error: {
+                        header: 'Unauthorized Access',
+                        message: 'Your session has expired or you do not have the necessary permissions to access this resource.'
+                    }
+                };
+            case 403:
+                return {
+                    success: false,
+                    error: {
+                        header: 'Access Denied',
+                        message: 'You do not have the required permissions to access this resource.'
+                    }
+                };
+            case 404:
+                return {
+                    success: false,
+                    error: {
+                        header: 'Resource Not Found',
+                        message: 'The resource you are looking for could not be located.'
+                    }
+                };
             case 429:
-                return { status: 429, error: 'Too Many Requests', message: 'Too many requests from this IP, please try again later.' };
+                return {
+                    success: false,
+                    error: {
+                        header: 'Rate Limit Exceeded',
+                        message: 'You have made too many requests in a short period. Please try again later.'
+                    }
+                };
             default:
-                return { status: 404, error: 'Not Found', message: 'The requested resource could not be found.' };
+                return {
+                    success: false,
+                    error: {
+                        header: 'Internal Server Error',
+                        message: 'An unexpected error occurred on the server. Please try again later or contact support if the issue persists.'
+                    }
+                }
         }
     }
 
