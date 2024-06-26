@@ -3,6 +3,81 @@ const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
 const RabbitMQService = require('../services/rabbitmq-service');
 
+// Hàm kiểm tra các item -> Expecting an array of items { itemId, quantity, note }
+async function checkItems(items) {
+    try {
+        const itemIds = items.map(item => item.itemId);
+        const itemResponse = await axios.post('http://localhost:5000/api/v1/items/batch', { itemIds });
+        return itemResponse.data.data.items;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Hàm xử lý add order items
+async function processAddOrderItems(orderId, items, itemDatas) {
+    const orderItemsToCreate = [];
+    const orderItemPromises = items.map(async (item) => {
+        const itemData = itemDatas.find(data => data.id === item.itemId);
+        const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, item.itemId);
+        if (existingOrderItem) {
+            const newQuantity = existingOrderItem.quantity + item.quantity;
+            const newAmount = newQuantity * itemData.price;
+            await OrderItemService.updateOrderItem({
+                id: existingOrderItem.id,
+                quantity: newQuantity,
+                amount: newAmount
+            });
+        } else {
+            orderItemsToCreate.push({
+                orderId,
+                itemId: item.itemId,
+                quantity: item.quantity,
+                price: itemData.price,
+                amount: item.quantity * itemData.price
+            });
+        }
+    });
+
+    await Promise.allSettled(orderItemPromises);
+
+    if (orderItemsToCreate.length > 0) {
+        await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
+    }
+}
+
+// Hàm xử lý update order items
+async function processUpdateOrderItems(orderId, items) {
+    return await Promise.allSettled(
+        items.map(async (item) => {
+            const { orderItemId, quantity, note } = item;
+            const existingOrderItem = await OrderItemService.getOrderItemById(orderItemId);
+
+            if (!existingOrderItem) {
+                throw new Error(`OrderItem with id ${orderItemId} not found`);
+            }
+            if (existingOrderItem.orderId != orderId) {
+                throw new Error(`OrderItem with id ${orderItemId} does not belong to order ${orderId}`);
+            }
+            if (existingOrderItem.status !== 'pending') {
+                throw new Error('This dish is being prepared, please contact the waiter for assistance');
+            }
+
+            const newQuantity = quantity !== undefined ? quantity : existingOrderItem.quantity;
+            const newAmount = newQuantity * existingOrderItem.price;
+
+            await OrderItemService.updateOrderItem({
+                id: existingOrderItem.id,
+                quantity: newQuantity,
+                amount: newAmount,
+                note: note !== undefined ? note : existingOrderItem.note
+            });
+
+            return null;
+        })
+    );
+}
+
 module.exports = {
     async createOrder(req, res) {
         try {
@@ -86,72 +161,34 @@ module.exports = {
                 return res.status(404).json('Order not found');
             }
 
-            let itemResponse;
+            let itemDatas;
             try {
-                // Gọi API batch để kiểm tra các item
-                const itemIds = items.map(item => item.itemId);
-                itemResponse = await axios.post('http://localhost:5000/api/v1/items/batch', { itemIds });
+                itemDatas = await checkItems(items);
             } catch (error) {
                 if (error.response && error.response.status === 400) {
                     return res.status(400).json(error.response.data);
-                } else {
-                    throw error;
                 }
+                throw error;
             }
 
-            const itemDatas = itemResponse.data.data.items;
-
-            // Thực hiện thêm hoặc cập nhật các mục trong đơn hàng
-            const orderItemsToCreate = [];
-            const orderItemPromises = items.map(async (item) => {
-                const itemData = itemDatas.find(data => data.id === item.itemId);
-                const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, item.itemId);
-                if (existingOrderItem) {
-                    const newQuantity = existingOrderItem.quantity + item.quantity;
-                    const newAmount = newQuantity * itemData.price;
-                    await OrderItemService.updateOrderItem({
-                        id: existingOrderItem.id,
-                        quantity: newQuantity,
-                        amount: newAmount
-                    });
-                } else {
-                    orderItemsToCreate.push({
-                        orderId,
-                        itemId: item.itemId,
-                        quantity: item.quantity,
-                        price: itemData.price,
-                        amount: item.quantity * itemData.price
-                    });
-                }
-            });
-
-            await Promise.allSettled(orderItemPromises);
-
-            if (orderItemsToCreate.length > 0) {
-                await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
-            }
+            // Thêm hoặc cập nhật các order items
+            await processAddOrderItems(orderId, items, itemDatas);
 
             const updatedOrder = await OrderService.getOrderById(orderId);
             res.status(200).json({ success: true, message: 'Items added to order successfully', data: { order: updatedOrder } });
 
-            // Chuẩn bị dữ liệu để gửi đến Kitchen Service
-            const kitchenServiceData = items.map(item => {
-                const itemData = itemDatas.find(data => data.id === item.itemId);
+            const updatedOrderJSON = updatedOrder.toJSON();
+            updatedOrderJSON.items = updatedOrderJSON.items.map(orderItem => {
+                const item = items.find(item => item.itemId === orderItem.itemId);
+                const itemData = itemDatas.find(data => data.id === orderItem.itemId);
                 return {
-                    itemId: item.itemId,
-                    name: itemData.name,
-                    quantity: item.quantity,
-                    note: item.note,
-                    time: new Date()
+                    ...orderItem,
+                    name: itemData ? itemData.name : null,
+                    note: item ? item.note : null
                 };
             });
-            
-            await RabbitMQService.pubOrderItem({
-                orderId,
-                tableId: order.tableId,
-                userId: order.userId,
-                items: kitchenServiceData
-            }).catch(err => {
+
+            await RabbitMQService.publishOrderItemOnCreated(updatedOrderJSON).catch(err => {
                 // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
                 console.error('Error publishing to Kitchen Service:', err);
             });
@@ -166,42 +203,29 @@ module.exports = {
             const { orderId } = req.params;
             const items = req.body.items; // Expecting an array of items { orderItemId, quantity, note }
 
-            const itemPromises = items.map(async (item) => {
-                const { orderItemId, quantity, note } = item;
-                try {
-                    const existingOrderItem = await OrderItemService.getOrderItemById(orderItemId);
-
-                    if (existingOrderItem && existingOrderItem.orderId == orderId && existingOrderItem.status === 'pending') {
-                        const newQuantity = quantity !== undefined ? quantity : existingOrderItem.quantity;
-                        const newAmount = newQuantity * existingOrderItem.price;
-
-                        await OrderItemService.updateOrderItem({
-                            id: existingOrderItem.id,
-                            quantity: newQuantity,
-                            amount: newAmount
-                        });
-                        return null;
-                    } else if (!existingOrderItem) {
-                        throw new Error(`OrderItem with id ${orderItemId} not found`);
-                    } else if (existingOrderItem.orderId != orderId) {
-                        throw new Error(`OrderItem with id ${orderItemId} does not belong to order ${orderId}`);
-                    } else {
-                        throw new Error('This dish is being prepared, please contact the waiter for assistance');
-                    }
-                } catch (error) {
-                    throw new Error(error);
-                }
-            });
-
-            const results = await Promise.allSettled(itemPromises);
-            console.log(results);
+            const results = await processUpdateOrderItems(orderId, items);
             const errors = results.filter(result => result.status === 'rejected').map(result => result.reason);
+
             if (errors.length > 0) {
-                return res.status(400).json({ error: errors.map(e => e.dev) });
+                return res.status(400).json({ success: false, error: errors.map(e => e.message) });
             }
 
             const updatedOrder = await OrderService.getOrderById(orderId);
-            res.status(200).json(updatedOrder);
+            res.status(200).json({ success: true, message: 'Items updated to order successfully', data: { order: updatedOrder } });
+
+            const updatedOrderJSON = updatedOrder.toJSON();
+            updatedOrderJSON.items = updatedOrderJSON.items.map(orderItem => {
+                const item = items.find(item => item.orderItemId === orderItem.id);
+                return {
+                    ...orderItem,
+                    note: item ? item.note : null
+                };
+            });
+
+            await RabbitMQService.publishOrderItemOnUpdated(updatedOrderJSON).catch(err => {
+                // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
+                console.error('Error publishing to Kitchen Service:', err);
+            });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

@@ -1,73 +1,58 @@
 require('dotenv').config();
-const createError = require('http-errors');
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const RabbitMQService = require('./services/rabbitmq-service');
+const WebSocket = require('ws');
+const RabbitMQ = require('./config/rabbitmq');
+const jwt = require('./utils/jwt');
 
-const app = express();
+const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || 8080;
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+const wss = new WebSocket.Server({
+    port: WEBSOCKET_PORT,
+    // verifyClient: (info, done) => {
+    //     const token = info.req.headers['authorization'];
+    //     if (!token) {
+    //         return done(false, 401, 'Unauthorized');
+    //     }
 
-RabbitMQService.subOrderItem();
-
-// catch 404 and forward to error handler
-app.use(function (req, res, next) { next(createError(404)); });
-
-// error handler
-app.use(function (err, req, res, next) {
-    console.error(err.stack);
-
-    const getError = (status) => {
-        switch (status) {
-            case 401:
-                return {
-                    success: false,
-                    error: {
-                        header: 'Unauthorized Access',
-                        message: 'Your session has expired or you do not have the necessary permissions to access this resource.'
-                    }
-                };
-            case 403:
-                return {
-                    success: false,
-                    error: {
-                        header: 'Access Denied',
-                        message: 'You do not have the required permissions to access this resource.'
-                    }
-                };
-            case 404:
-                return {
-                    success: false,
-                    error: {
-                        header: 'Resource Not Found',
-                        message: 'The resource you are looking for could not be located.'
-                    }
-                };
-            case 429:
-                return {
-                    success: false,
-                    error: {
-                        header: 'Rate Limit Exceeded',
-                        message: 'You have made too many requests in a short period. Please try again later.'
-                    }
-                };
-            default:
-                return {
-                    success: false,
-                    error: {
-                        header: 'Internal Server Error',
-                        message: 'An unexpected error occurred on the server. Please try again later or contact support if the issue persists.'
-                    }
-                }
-        }
-    }
-
-    res.status(err.status || 500).json(getError(err.status || 500));
+    //     jwt.verifyToken(token.replace('Bearer ', ''))
+    //         .then(() => done(true))
+    //         .catch(() => done(false, 401, 'Unauthorized'));
+    // }
 });
 
-module.exports = app;
+wss.on('connection', (ws) => {
+    console.log('WebSocket client connected.');
+
+    ws.on('close', () => {
+        console.log('WebSocket client disconnected.');
+    });
+});
+
+(async () => {
+    try {
+        await RabbitMQ.connect();
+        await RabbitMQ.subMessage('orders-items-created', (orderData) => {
+            console.log('\n[CREATED] Received order:', orderData);
+            // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(orderData));
+                }
+            });
+        });
+
+        await RabbitMQ.subMessage('orders-items-updated', (orderData) => {
+            console.log('\n[UPDATED] Received order:', orderData);
+            // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(orderData));
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Failed to set up RabbitMQ subscriber:', error);
+        process.exit(1); // Exit the process with error
+    }
+})();
+
+console.log(`[WebSocketServer] KitchenService is listening on port: ${WEBSOCKET_PORT}`);
