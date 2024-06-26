@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Item } = require('../models');
 
 class ItemService {
@@ -14,9 +15,13 @@ class ItemService {
         return Item.findAll();
     }
 
-    static async getAllItemsByCaterogies(categoryId) {
+    static async getItemsForClient(qName) {
         return Item.findAll({
-            where: { categoryId: categoryId }
+            where: {
+                name: {
+                    [Op.like]: `%${qName}%`,
+                },
+            },
         });
     }
 

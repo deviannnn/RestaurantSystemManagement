@@ -1,4 +1,5 @@
 const CategoryService = require('../services/category.service');
+const connectRedis = require('../config/redis');
 
 class CategoryController {
     // Create a new category
@@ -24,8 +25,10 @@ class CategoryController {
                     res.status(404).json({ error: 'Category not found' });
                 }
             } else {
+
                 const categories = await CategoryService.getAllCategories();
                 res.status(200).json(categories);
+
             }
         } catch (error) {
             res.status(500).json({ error: error.message });

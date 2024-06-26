@@ -13,7 +13,6 @@ module.exports = {
             bigNumberStrings: true,
         },
         logging: false,
-        query: { raw: true },
         timezone: process.env.TIMEZONE || '+07:00'
     },
     test: {
