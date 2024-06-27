@@ -1,5 +1,5 @@
 const UserService = require('../services/user.service');
-const { sendToQueue } = require('../config/producer');
+const RabbitMQ = require('../services/rabbitmq-service');
 const { generateJWT, generateRefreshToken, decodeToken, extractToken, revokedTokens } = require('../utils/jwt');
 const { validationResult, check } = require('express-validator');
 
@@ -83,7 +83,8 @@ class UserController {
                         link: link
                     }
 
-                    await sendToQueue('send_email', JSON.stringify(mailContent));
+                    RabbitMQ.pubEmail(JSON.stringify(mailContent));
+
                     return res.status(201).json({
                             success: true,
                             message: "Register successfull!",

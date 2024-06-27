@@ -7,10 +7,20 @@ const logger = require('morgan');
 
 const convertTimezone = require('./middlewares/timezone');
 const connectDB = require('./config/connectDB');
-const connectRabbitMQ = require('./config/rabbitmq');
+const RabbitMQ = require('./config/rabbitmq');
 
 connectDB(); //Test Database connection
-connectRabbitMQ(); //Test Connect to RabbitMQ
+
+const startRabbitMQ = async () => {
+    try {
+        await RabbitMQ.connect();
+        console.log('RabbitMQ is connected');
+    } catch (error) {
+        console.error('Failed to start RabbitMQ:', error);
+    }
+};
+
+startRabbitMQ();
 
 const app = express();
 

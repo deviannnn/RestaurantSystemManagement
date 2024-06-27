@@ -1,4 +1,8 @@
-const { Category } = require('../models');
+const { Category, Item } = require('../models');
+
+const includeOptions = [
+    { model: Item, as: 'items' }
+];
 
 class CategoryService {
     static async createCategory(name, description, active) {
@@ -7,11 +11,19 @@ class CategoryService {
     }
 
     static async getCategoryById(id) {
-        return Category.findByPk(id);
+        return await Category.findByPk(id, {
+            include: includeOptions
+        });
     }
 
-    static async getAllCategories() {
-        return Category.findAll();
+    static async getAllCategories(active = null) {
+        const whereCondition = active !== null ? { active } : {};
+        const includeCondition = active !== null ? [{ ...includeOptions[0], where: { active } }] : includeOptions;
+
+        return await Category.findAll({
+            where: whereCondition,
+            include: includeCondition
+        });
     }
 
     static async updateCategory(id, name, description, active) {

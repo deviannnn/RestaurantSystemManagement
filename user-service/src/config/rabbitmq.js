@@ -1,48 +1,57 @@
-const amqp = require('amqplib/callback_api');
+const amqp = require('amqplib');
 
-const RABBITMQ_URL = 'amqp://admin:admin@localhost:5672';
+class RabbitMQ {
+    constructor() {
+        this.rabbitmqUrl = 'amqp://admin:admin@localhost:5672';
+        this.connection = null;
+        this.channel = null;
+    }
 
-let connection = null;
-let channel = null;
-
-const connectRabbitMQ = () => {
-    return new Promise((resolve, reject) => {
-        amqp.connect(RABBITMQ_URL, (err, connection) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(connection);
-        });
-    });
-}
-
-const createChannel = (connection) => {
-    return new Promise((resolve, reject) => {
-        connection.createChannel((err, channel) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(channel);
-        });
-    });
-}
-
-module.exports = async () => {
-    try {
-        if(connection && channel)
-        {
-            return { connection, channel };
+    async connect(connectionName = 'UserService') {
+        if (!this.connection) {
+            this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
+            this.channel = await this.connection.createChannel();
         }
-        const con = await connectRabbitMQ();
-        const cha = await createChannel(con);
-        console.log('RabbitMQ connection established');
+    }
 
-        connection = con;
-        channel = cha;
+    async assertQueue(queue) {
+        if (this.channel) {
+            await this.channel.assertQueue(queue, { durable: true });
+        } else {
+            throw new Error('Channel is not available. Call connect() first.');
+        }
+    }
 
-        return { connection, channel };
-    } catch (error) {
-        console.error('Failed to connect to RabbitMQ', error);
-        throw error;
+    async publishMessage(queue, message){
+        try {
+            if (!this.connection || !this.channel) {
+                await this.connect();
+            }
+
+            await this.assertQueue(queue);
+
+            this.channel.sendToQueue(queue, Buffer.from(message), {
+                persistent: true
+            });
+
+            console.log(`Message sent to queue ${queue}: ${message}`);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async closeConnection() {
+        try {
+            if (this.connection) {
+                await this.connection.close();
+                this.connection = null;
+                this.channel = null;
+                console.log('RabbitMQ connection closed');
+            }
+        } catch (error) {
+            console.error('Failed to close RabbitMQ connection:', error);
+        }
     }
 }
+
+module.exports = new RabbitMQ();

@@ -1,4 +1,5 @@
 const ItemService = require('../services/item.service');
+const CategoryService = require('../services/category.service');
 const upload = require('../middlewares/upload');
 const connectRedis = require('../config/redis');
 
@@ -21,10 +22,19 @@ class ItemController {
     static async toggleAvailable(req, res) {
         try {
             const { id } = req.params;
-            const { available } = req.body;
+            const { available } = req.body; 
+            const client = await connectRedis();
 
             const toggledItem = await ItemService.updateItem({ id, available });
             if (toggledItem) {
+                client.flushAll();
+
+                const allItems = await ItemService.getAllItems();
+                await client.set(`items`, JSON.stringify(allItems), 'EX', 50);
+
+                const allItemsClient = await ItemService.getAllItemsForClient();
+                await client.set(`allItemsClient`, JSON.stringify(allItemsClient), 'EX', 50);
+
                 res.status(200).json(toggledItem);
             } else {
                 res.status(404).json({ error: 'Item not found' });
@@ -34,31 +44,10 @@ class ItemController {
         }
     }
 
-    static async getItemsByCategories(req, res) {
-        try {
-            const { categoryId } = req.params;
-            const client = await connectRedis();
-
-            const getItemInRedis = await client.get(`items:category:${categoryId}`);
-            if (getItemInRedis) {
-                res.status(200).json(JSON.parse(getItemInRedis));
-            }
-            else {
-                const menu = await ItemService.getAllItemsByCaterogies(categoryId);
-                await client.set(`items:category:${categoryId}`, JSON.stringify(menu), 'EX', 3600);
-                return res.status(300).json(menu);
-            }
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
-
-
     // Get all items or get item by ID
     static async getItems(req, res) {
         try {
             const { id } = req.params;
-            const client = await connectRedis();
             if (id) {
                 const item = await ItemService.getItemById(id);
                 if (!item) {
@@ -66,19 +55,41 @@ class ItemController {
                 }
                 return res.status(300).json(item);
             } else {
-                // client.flushAll();
-                const getItemInRedis = await client.get(`items`);
-                if (getItemInRedis) {
-                    res.status(200).json({ success: true, data: JSON.parse(getItemInRedis) });
-                }
-                else {
-                    const allItems = await ItemService.getAllItems(id);
-                    await client.set(`items`, JSON.stringify(allItems), 'EX', 50);
-                    res.status(300).json(allItems);
-                }
+                const allItems = await ItemService.getAllItems();
+                res.status(300).json(allItems);
             }
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getItemsForClient(req, res, next) {
+        try {
+            const qName = req.query.name;
+            const client = await connectRedis();
+    
+            if (qName) {
+                const find = await ItemService.getItemsForClient(qName);
+                if (!find) {
+                    return res.status(404).json({ message: 'Could not find a dish with that name' });
+                }
+                return res.status(200).json(find);
+            } else {
+                const allItemsClient = await client.get('allItemsClient');
+                if (allItemsClient) {
+                    return res.status(300).json(JSON.parse(allItemsClient));
+                }
+    
+                const item = await CategoryService.getAllCategories(true);
+                if (!item) {
+                    return res.status(404).json({ error: 'All Item not found' });
+                }
+    
+                await client.set('allItemsClient', JSON.stringify(item), 'EX', 50);
+                return res.status(200).json(item);
+            }
+        } catch (error) {
+            next(error);
         }
     }
 
@@ -96,7 +107,7 @@ class ItemController {
 
             res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            next(error);
         }
     }
 

@@ -1,48 +1,66 @@
-const amqp = require('amqplib/callback_api');
+const amqp = require('amqplib');
 
-const RABBITMQ_URL = 'amqp://admin:admin@localhost:5672';
+class RabbitMQ {
+    constructor() {
+        this.rabbitmqUrl = 'amqp://admin:admin@localhost:5672';
+        this.connection = null;
+        this.channel = null;
+        this.subscriptions = new Map(); // Map để lưu các subscription
+    }
 
-let connection = null;
-let channel = null;
-
-const connectRabbitMQ = () => {
-    return new Promise((resolve, reject) => {
-        amqp.connect(RABBITMQ_URL, (err, connection) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(connection);
-        });
-    });
-}
-
-const createChannel = (connection) => {
-    return new Promise((resolve, reject) => {
-        connection.createChannel((err, channel) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(channel);
-        });
-    });
-}
-
-module.exports = async () => {
-    try {
-        if(connection && channel)
-        {
-            return { connection, channel };
+    async connect(connectionName = 'NotificationService') {
+        if (!this.connection) {
+            this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
+            this.channel = await this.connection.createChannel();
         }
-        const con = await connectRabbitMQ();
-        const cha = await createChannel(con);
-        console.log('RabbitMQ connection established');
+    }
 
-        connection = con;
-        channel = cha;
+    async assertQueue(queue) {
+        if (this.channel) {
+            await this.channel.assertQueue(queue, { durable: true });
+        } else {
+            throw new Error('Channel is not available. Call connect() first.');
+        }
+    }
+    async subMessage(queue, callback){
+        try {
+            if (!this.connection || !this.channel) {
+                await this.connect();
+            }
 
-        return { connection, channel };
-    } catch (error) {
-        console.error('Failed to connect to RabbitMQ', error);
-        throw error;
+            await this.assertQueue(queue);
+
+            if (!this.subscriptions.has(queue)) {
+                await this.channel.consume(queue, (msg) => {
+                    if (msg !== null) {
+                        const message = JSON.parse(msg.content.toString());
+                        callback(message);
+                        this.channel.ack(msg);
+                    }
+                });
+                this.subscriptions.set(queue, callback);
+            } else {
+                throw new Error(`Already subscribed to queue: ${queue}`);
+            }
+
+            console.log(`Subscribed to messages from queue: ${queue}`);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async closeConnection() {
+        for (const queue of this.subscriptions.keys()) {
+            await this.channel.cancel(queue);
+        }
+
+        if (this.connection) {
+            await this.connection.close();
+            this.connection = null;
+            this.channel = null;
+            this.subscriptions.clear();
+        }
     }
 }
+
+module.exports = new RabbitMQ();
