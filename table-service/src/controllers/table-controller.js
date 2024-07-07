@@ -1,4 +1,4 @@
-const TableService = require('../services/table.service');
+const TableService = require('../services/table-service');
 
 class TableController {
     // Create a new table
@@ -8,8 +8,8 @@ class TableController {
             const newTable = await TableService.createTable(no, capacity, isVip, status, active);
             res.status(201).json({
                 success: true,
-                message: 'Create table sucessfull!',
-                data: {newTable}
+                message: 'Create table sucessfully!',
+                data: { newTable }
             });
         } catch (error) {
             next(error);
@@ -25,20 +25,19 @@ class TableController {
                 if (table) {
                     res.status(200).json({
                         sucess: true,
-                        message: 'Get table successfull!',
-                        data: {table}
+                        message: 'Get table successfully!',
+                        data: { table }
                     });
                 } else {
-                    res.status(404).json({ error: 'Table not found' });
+                    res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
                 }
             } else {
                 const tables = await TableService.getAllTables();
-                res.status(200).json(
-                    { 
-                        sucess: true,
-                        message: 'Get all table successfull!',
-                        data: {tables}
-                    });
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Get all tables successfully!',
+                    data: { tables }
+                });
             }
         } catch (error) {
             next(error);
@@ -54,15 +53,11 @@ class TableController {
             if (updatedTable) {
                 res.status(200).json({
                     sucess: true,
-                    message: 'Update table successfull!',
-                    data: {updatedTable}
+                    message: 'Update table successfully!',
+                    data: { updatedTable }
                 });
             } else {
-                res.status(404).json({ 
-                    sucess: false,
-                    message: 'Table not found',
-                    data: {},
-                });
+                res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
             }
         } catch (error) {
             next(error);
@@ -77,15 +72,11 @@ class TableController {
             if (deletedTable) {
                 res.status(200).json({
                     success: true,
-                    message: 'Delete table successful!',
-                    data: {deletedTable}
+                    message: 'Delete table successfully!',
+                    data: { deletedTable }
                 });
             } else {
-                res.status(404).json({ 
-                    success: false,
-                    message: 'Table not found',
-                    data: {} 
-                });
+                res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
             }
         } catch (error) {
             next(error);

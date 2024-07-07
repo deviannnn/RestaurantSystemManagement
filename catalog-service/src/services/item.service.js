@@ -15,7 +15,7 @@ class ItemService {
         return Item.findAll();
     }
 
-    static async getItemsForClient(qName) {
+    static async searchItemByName(qName) {
         return Item.findAll({
             where: {
                 name: {

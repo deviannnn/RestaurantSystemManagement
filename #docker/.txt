@@ -1,0 +1,14 @@
+# Tạo mạng overlay
+docker network create -d overlay order_network
+
+docker service create --name=viz --publish=8080:8080/tcp --constraint=node.role==manager --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer
+
+docker service create --name order_mysql --network order_network --replicas 1 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=restaurant_system_order -p 3308:3306 mysql:8.4.0
+docker service create --name order_service --publish 5002:5002/tcp --env DEV_DB_HOSTNAME=order_mysql --env DEV_DB_PORT=3306 --env DEV_DB_USERNAME=root --env DEV_DB_PASSWORD=123456 --env DEV_DB_NAME=restaurant_system_order --network order_network --replicas 1 deviannnn/restaurant:order
+
+docker network inspect order_network
+
+docker container ls
+docker container exec -it <NAMES> <BASH>
+
+FOR /F "tokens=1" %i IN ('docker service ls -q') DO docker service rm %i

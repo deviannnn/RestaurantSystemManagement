@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  order-db-mysql:
+    image: mysql:8.4.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_order
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3308:3306"
+    volumes:
+      - order-db-data:/var/lib/mysql
+
+  backend:
+    image: deviannnn/restaurant:order
+    restart: unless-stopped
+    environment:
+      - DEV_DB_HOSTNAME=host.docker.internal
+    ports:
+      - "5000:5002"
+
+volumes:
+  order-db-data:

@@ -1,20 +1,13 @@
-# Use an official Node.js runtime as the base image
-FROM node:20
+FROM node:20-alpine
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /restaurant/backend/catalog-service
 
-# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install app dependencies
 RUN npm install
 
-# Bundle app source
 COPY . .
 
-# Expose port 5003 to the outside worlds
-EXPOSE 5003
+EXPOSE 5000
 
-# Command to run the application
 CMD ["npm", "start"]

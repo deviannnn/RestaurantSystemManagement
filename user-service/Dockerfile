@@ -13,8 +13,8 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-# Expose port 5003 to the outside worlds
-EXPOSE 5003
+# Expose port 5000 to the outside worlds
+EXPOSE 5000
 
 # Command to run the application
 CMD ["npm", "start"]

@@ -22,7 +22,7 @@ class ItemController {
     static async toggleAvailable(req, res) {
         try {
             const { id } = req.params;
-            const { available } = req.body; 
+            const { available } = req.body;
             const client = await connectRedis();
 
             const toggledItem = await ItemService.updateItem({ id, available });
@@ -66,25 +66,26 @@ class ItemController {
     static async getItemsForClient(req, res, next) {
         try {
             const qName = req.query.name;
-            const client = await connectRedis();
-    
+
             if (qName) {
-                const find = await ItemService.getItemsForClient(qName);
+                const find = await ItemService.searchItemByName(qName);
                 if (!find) {
                     return res.status(404).json({ message: 'Could not find a dish with that name' });
                 }
                 return res.status(200).json(find);
             } else {
+                const client = await connectRedis();
+
                 const allItemsClient = await client.get('allItemsClient');
                 if (allItemsClient) {
                     return res.status(300).json(JSON.parse(allItemsClient));
                 }
-    
+
                 const item = await CategoryService.getAllCategories(true);
                 if (!item) {
                     return res.status(404).json({ error: 'All Item not found' });
                 }
-    
+
                 await client.set('allItemsClient', JSON.stringify(item), 'EX', 50);
                 return res.status(200).json(item);
             }

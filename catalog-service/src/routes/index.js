@@ -1,14 +1,26 @@
 const express = require('express');
 const router = express.Router();
 
-const v1CategoryRouter = require('./v1/category');
-const v1ItemRouter = require('./v1/item');
+const CategoryController = require('../controllers/category.controller');
+const ItemController = require('../controllers/item.controller');
 
-// Các router khác...
+// Categories CRUD
+router.post('/v1/categories', CategoryController.createCategory);
+router.get('/v1/categories/:id?', CategoryController.getCategories);
+router.put('/v1/categories/:id', CategoryController.updateCategory);
+router.delete('/v1/categories/:id', CategoryController.deleteCategory);
 
-router.use('/v1/categories', require('./v1/category'));
-router.use('/v1/items', require('./v1/item'));
 
-// Sử dụng các router khác...
+// Items CRUD
+router.post('/v1/items', ItemController.createItem);
+router.get('/v1/items/:id?', ItemController.getItems);
+router.put('/v1/items/:id', ItemController.updateItem);
+router.delete('/v1/items/:id', ItemController.deleteItem);
+
+// Items Business Logic
+router.post('/v1/items/:id/toggle-available', ItemController.toggleAvailable);
+router.post('/v1/items/batch', ItemController.batchValidator);
+router.get('/v2/items/', ItemController.getItemsForClient);
+
 
 module.exports = router;
