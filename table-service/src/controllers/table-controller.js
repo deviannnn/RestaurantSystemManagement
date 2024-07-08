@@ -1,3 +1,4 @@
+const createError = require('http-errors');
 const TableService = require('../services/table-service');
 
 class TableController {
@@ -29,7 +30,7 @@ class TableController {
                         data: { table }
                     });
                 } else {
-                    res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
+                    next(createError(404, 'Table not found'));
                 }
             } else {
                 const tables = await TableService.getAllTables();
@@ -49,7 +50,7 @@ class TableController {
         try {
             const { id } = req.params;
             const { no, capacity, isVip, status, active } = req.body;
-            const updatedTable = await TableService.updateTable(id, no, capacity, isVip, status, active);
+            const updatedTable = await TableService.updateTable({ id, no, capacity, isVip, status, active });
             if (updatedTable) {
                 res.status(200).json({
                     sucess: true,

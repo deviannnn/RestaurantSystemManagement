@@ -14,7 +14,7 @@ class TableService {
         return Table.findAll();
     }
 
-    static async updateTable(id, no, capacity, isVip, status, active) {
+    static async updateTable({ id, no, capacity, isVip, status, active }) {
         const [updated] = await Table.update({ no, capacity, isVip, status, active }, { where: { id } });
         if (updated) {
             return Table.findByPk(id);

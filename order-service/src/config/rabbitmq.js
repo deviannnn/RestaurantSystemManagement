@@ -8,21 +8,44 @@ class RabbitMQ {
     }
 
     async connect(connectionName = 'OrderService') {
-        if (!this.connection) {
-            this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
-            this.channel = await this.connection.createChannel();
+        try {
+            if (!this.connection) {
+                this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
+                this.channel = await this.connection.createChannel();
+            }
+        } catch (error) {
+            console.error('Error connecting to RabbitMQ:', error);
+            throw error;
         }
     }
 
     async assertQueue(queue) {
-        if (this.channel) {
-            await this.channel.assertQueue(queue, { durable: true });
-        } else {
-            throw new Error('Channel is not available. Call connect() first.');
+        try {
+            if (this.channel) {
+                await this.channel.assertQueue(queue, { durable: true });
+            } else {
+                throw new Error('Channel is not available. Call connect() first.');
+            }
+        } catch (error) {
+            console.error('Error asserting queue:', error);
+            throw error;
         }
     }
 
-    async publishMessage(queue, message) {
+    async assertExchange(exchange, type = 'fanout') {
+        try {
+            if (this.channel) {
+                await this.channel.assertExchange(exchange, type, { durable: true });
+            } else {
+                throw new Error('Channel is not available. Call connect() first.');
+            }
+        } catch (error) {
+            console.error('Error asserting exchange:', error);
+            throw error;
+        }
+    }
+
+    async publishToQueue(queue, message) {
         try {
             if (!this.connection || !this.channel) {
                 await this.connect();
@@ -35,15 +58,38 @@ class RabbitMQ {
 
             console.log(`\nPublished message to queue ${queue}: ${messageBuffer.toString()}`);
         } catch (error) {
+            console.error('Error publishing message:', error);
+            throw error;
+        }
+    }
+
+    async publishToExchange(exchange, message, routingKey = '') {
+        try {
+            if (!this.connection || !this.channel) {
+                await this.connect();
+            }
+
+            await this.assertExchange(exchange);
+
+            const messageBuffer = Buffer.from(JSON.stringify(message));
+            this.channel.publish(exchange, routingKey, messageBuffer, { persistent: true });
+
+            console.log(`\nPublished message to exchange ${exchange}: ${messageBuffer.toString()}`);
+        } catch (error) {
             throw error;
         }
     }
 
     async closeConnection() {
-        if (this.connection) {
-            await this.connection.close();
-            this.connection = null;
-            this.channel = null;
+        try {
+            if (this.connection) {
+                await this.connection.close();
+                this.connection = null;
+                this.channel = null;
+            }
+        } catch (error) {
+            console.error('Error closing RabbitMQ connection:', error);
+            throw error;
         }
     }
 }

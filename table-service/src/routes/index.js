@@ -3,9 +3,9 @@ const router = express.Router();
 
 const TableController = require('../controllers/table-controller');
 
-router.post('/', TableController.createTable);
-router.get('/:id?', TableController.getTables);
-router.put('/:id', TableController.updateTable);
-router.delete('/:id', TableController.deleteTable);
+router.post('/v1/tables', TableController.createTable);
+router.get('/v1/tables/:id?', TableController.getTables);
+router.put('/v1/tables/:id', TableController.updateTable);
+router.delete('/v1/tables/:id', TableController.deleteTable);
 
 module.exports = router;

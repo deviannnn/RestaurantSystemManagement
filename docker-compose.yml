@@ -34,16 +34,16 @@ services:
   #   volumes:
   #     - payment-db-data:/var/lib/mysql
       
-  # table_mysql:
-  #   image: mysql:8.4.0
-  #   restart: always
-  #   environment:
-  #     - MYSQL_DATABASE=restaurant_system_table
-  #     - MYSQL_ROOT_PASSWORD=123456
-  #   ports:
-  #     - "3310:3306"
-  #   volumes:
-  #     - table-db-data:/var/lib/mysql
+  table_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_table
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3310:3306"
+    volumes:
+      - table-db-data:/var/lib/mysql
 
   # user_mysql:
   #   image: mysql:8.4.0
@@ -78,7 +78,7 @@ volumes:
   catalog-db-data:
   order-db-data:
   # payment-db-data:
-  # table-db-data:
+  table-db-data:
   # user-db-data:
   rabbitmq-data:
   redis-data:
