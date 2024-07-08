@@ -18,8 +18,8 @@ function validate(req, res, next) {
     next();
 }
 
-class UserController {
-    static register = [
+module.exports = {
+    register : [
         check('fullName')
             .not().isEmpty().withMessage('Fullname cannot be empty.')
             .matches(/^[\p{L}\s]*$/u).withMessage('Fullname should only contain letters and spaces.'),
@@ -96,10 +96,10 @@ class UserController {
                 next(error);
             }
         }
-    ]
+    ],
 
 
-    static async login(req, res, next) {
+    async login(req, res, next) {
         try {
             const { email, password } = req.body;
             const userData = { email, password };
@@ -137,9 +137,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async logout(req, res, next) {
+    async logout(req, res, next) {
         try {
             const token = await extractToken(req);
 
@@ -174,9 +174,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async verifyAccount(req, res, next) {
+    async verifyAccount(req, res, next) {
         try {
             const token = extractToken(req);
             if (!token) {
@@ -218,9 +218,9 @@ class UserController {
         } catch (error) {
             next(error)
         }
-    }
+    },
 
-    static async resetPassword(req, res, next) {
+    async resetPassword(req, res, next) {
         try {
             const { email } = req.body;
             const userData = await UserService.getUserByEmail(email);
@@ -261,9 +261,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async refreshToken(req, res, next) {
+    async refreshToken(req, res, next) {
         try {
             const { refreshToken } = req.body;
             if (!refreshToken) {
@@ -298,9 +298,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async resendMailActive(req, res, next) {
+    async resendMailActive(req, res, next) {
         try {
             const { id } = req.body;
 
@@ -343,9 +343,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async changePassword(req, res, next) {
+    async changePassword(req, res, next) {
         try {
             const { id } = req.params;
             const { newPassword, confirmnNewPassword } = req.body;
@@ -379,10 +379,10 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
     //CRUD of user
-    static async getUser(req, res, next) {
+    async getUser(req, res, next) {
         try {
             const { id } = req.params;
             if (id) {
@@ -411,9 +411,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async updateUser(req, res, next) {
+    async updateUser(req, res, next) {
         try {
             const { id } = req.params;
             const { roleId, fullName, gender, nationalId, phone, email, password } = req.body;
@@ -435,9 +435,9 @@ class UserController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
-    static async deleteUser(req, res, next) {
+    async deleteUser(req, res, next) {
         try {
             const { id } = req.params;
             const deletedUser = await UserService.deleteUser(id);
@@ -458,6 +458,4 @@ class UserController {
             next(error);
         }
     }
-}
-
-module.exports = UserController;
+};
