@@ -8,7 +8,7 @@ class RabbitMQ {
         this.subscriptions = new Map(); // Map để lưu các subscription
     }
 
-    async connect(connectionName = 'KitchenService') {
+    async connect(connectionName = 'TableService') {
         try {
             if (!this.connection) {
                 this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });

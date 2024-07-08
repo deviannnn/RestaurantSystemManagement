@@ -30,7 +30,18 @@ wss.on('connection', (ws) => {
 (async () => {
     try {
         await RabbitMQ.connect();
-        await RabbitMQ.subMessage('orders-items-created', (orderData) => {
+
+        await RabbitMQ.consumeExchange('new-order-created', (orderData) => {
+            console.log('\n[CREATED] Received order:', orderData);
+            // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(orderData));
+                }
+            });
+        });
+        
+        await RabbitMQ.consumeQueue('added-items-to-order', (orderData) => {
             console.log('\n[CREATED] Received order:', orderData);
             // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
             wss.clients.forEach((client) => {
@@ -40,7 +51,7 @@ wss.on('connection', (ws) => {
             });
         });
 
-        await RabbitMQ.subMessage('orders-items-updated', (orderData) => {
+        await RabbitMQ.consumeQueue('updated-items-to-order', (orderData) => {
             console.log('\n[UPDATED] Received order:', orderData);
             // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
             wss.clients.forEach((client) => {

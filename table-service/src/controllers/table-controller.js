@@ -1,3 +1,4 @@
+const createError = require('http-errors');
 const TableService = require('../services/table-service');
 const { validationResult, check } = require('express-validator');
 
@@ -56,7 +57,7 @@ module.exports = {
                         data: { table }
                     });
                 } else {
-                    return res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
+                    next(createError(404, 'Table not found'));
                 }
             } else {
                 const tables = await TableService.getAllTables();
@@ -110,8 +111,8 @@ module.exports = {
                 next(error);
             }
         }
-    
     ],
+      
     // Delete table by ID
     async deleteTable(req, res, next) {
         try {
