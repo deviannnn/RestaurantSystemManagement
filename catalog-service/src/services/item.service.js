@@ -1,31 +1,51 @@
 const { Op } = require('sequelize');
 const { Item } = require('../models');
 
-class ItemService {
-    static async createItem(name, price, image, description, available, active, categoryId) {
-        return Item.create({ name, price, image, description, available, active, categoryId })
+module.exports = {
+    async createItem(name, price, image, description, available, active, categoryId) {
+        try {
+            return Item.create({ name, price, image, description, available, active, categoryId })
             .then((newItem) => newItem.get({ plain: true }));
-    }
+        } catch (error) {
+            console.error('Error create item:', error);
+            throw error;
+        }
+    },
 
-    static async getItemById(id) {
-        return Item.findByPk(id);
-    }
+    async getItemById(id) {
+        try {
+            return Item.findByPk(id);
+        } catch (error) {
+            console.error('Error get item by ID:', error);
+            throw error;
+        }
+    },
 
-    static async getAllItems() {
-        return Item.findAll();
-    }
+    async getAllItems() {
+        try {
+            return Item.findAll();
+        } catch (error) {
+            console.error('Error get all items:', error);
+            throw error;
+        }
+    },
 
-    static async searchItemByName(qName) {
-        return Item.findAll({
-            where: {
-                name: {
-                    [Op.like]: `%${qName}%`,
+    async searchItemByName(qName) {
+        try {
+            return Item.findAll({
+                where: {
+                    name: {
+                        [Op.like]: `%${qName}%`,
+                    },
                 },
-            },
-        });
-    }
+            });
+        } catch (error) {
+            console.error('Error search item by name:', error);
+            throw error;
+        }
+    },
 
-    static async getItemsByListIds(itemIds) {
+    async getItemsByListIds(itemIds) {
         try {
             // Lấy tất cả các mục với id trong itemIds
             const allItems = await Item.findAll({
@@ -65,24 +85,32 @@ class ItemService {
         } catch (error) {
             throw new Error(`Error fetching items: ${error.message}`);
         }
-    }
+    },
 
-    static async updateItem({ id, name, price, image, description, available, active, categoryId }) {
-        const [updated] = await Item.update({ name, price, image, description, available, active, categoryId }, { where: { id } });
-        if (updated) {
-            return Item.findByPk(id);
+    async updateItem({ id, name, price, image, description, available, active, categoryId }) {
+        try {
+            const [updated] = await Item.update({ name, price, image, description, available, active, categoryId }, { where: { id } });
+            if (updated) {
+                return Item.findByPk(id);
+            }
+            return null;
+        } catch (error) {
+            console.error('Error update item:', error);
+            throw error;
         }
-        return null;
-    }
+    },
 
-    static async deleteItem(id) {
-        const item = await Item.findByPk(id);
-        if (item) {
-            await Item.destroy({ where: { id } });
-            return item;
+    async deleteItem(id) {
+        try {
+            const item = await Item.findByPk(id);
+            if (item) {
+                await Item.destroy({ where: { id } });
+                return item;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error delete item:', error);
+            throw error;
         }
-        return null;
     }
-}
-
-module.exports = ItemService;
+};

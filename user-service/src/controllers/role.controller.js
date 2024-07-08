@@ -1,23 +1,42 @@
 const RoleService = require('../services/role.service');
+const { validationResult, check } = require('express-validator');
 
-class RoleController {
-    // Create a new role
-    static async createRole(req, res, next) {
-        try {
-            const { name, active } = req.body;
-            const newRole = await RoleService.createRole(name, active);
-            res.status(201).json({
-                success: true,
-                message: 'Create role successfull!',
-                data: {newRole}
-            });
-        } catch (error) {
-            next(error);
-        }
+function validate(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const errorMessages = errors.array().map(error => ({ field: error.path, msg: error.msg }));
+        return res.status(400).json({ success: false, message: errorMessages, data: {} });
     }
+    next();
+}
+
+module.exports = {
+    // Create a new role
+    createRole:[
+        check('name')
+            .notEmpty().withMessage('Name is required')
+            .isString().withMessage('Name must be a string'),
+        check('active')
+            .notEmpty().withMessage('Active status is required')
+            .isBoolean().withMessage('Active must be a boolean'), 
+        validate,
+        async (req, res, next) => {
+            try {
+                const { name, active } = req.body;
+                const newRole = await RoleService.createRole(name, active);
+                res.status(201).json({
+                    success: true,
+                    message: 'Create role successfull!',
+                    data: {newRole}
+                });
+            } catch (error) {
+                next(error);
+            }
+        }
+    ],
 
     // Get all roles or get role by ID
-    static async getRoles(req, res, next) {
+    async getRoles(req, res, next) {
         try {
             const { id } = req.params;
             if (id) {
@@ -42,34 +61,43 @@ class RoleController {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
     // Update role by ID
-    static async updateRole(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { name, active } = req.body;
-            const updatedRole = await RoleService.updateRole(id, name, active);
-            if (updatedRole) {
-                res.status(200).json({
-                    success: true,
-                    message: 'Update role successfull!',
-                    data: {updatedRole}
-                });
-            } else {
-                res.status(404).json({ 
-                    success: false,
-                    message: 'Role not found!',
-                    data: {} 
-                });
+    updateRole:[
+        check('name')
+            .notEmpty().withMessage('Name is required')
+            .isString().withMessage('Name must be a string'),
+        check('active')
+            .notEmpty().withMessage('Active status is required')
+            .isBoolean().withMessage('Active must be a boolean'), 
+        validate,
+        async (req, res, next) => {
+            try {
+                const { id } = req.params;
+                const { name, active } = req.body;
+                const updatedRole = await RoleService.updateRole(id, name, active);
+                if (updatedRole) {
+                    res.status(200).json({
+                        success: true,
+                        message: 'Update role successfull!',
+                        data: {updatedRole}
+                    });
+                } else {
+                    res.status(404).json({ 
+                        success: false,
+                        message: 'Role not found!',
+                        data: {} 
+                    });
+                }
+            } catch (error) {
+                next(error);
             }
-        } catch (error) {
-            next(error);
-        }
-    }
+        },
+    ],
 
     // Delete role by ID
-    static async deleteRole(req, res, next) {
+    async deleteRole(req, res, next) {
         try {
             const { id } = req.params;
             const deletedRole = await RoleService.deleteRole(id);
@@ -90,6 +118,4 @@ class RoleController {
             next(error);
         }
     }
-}
-
-module.exports = RoleController;
+};
