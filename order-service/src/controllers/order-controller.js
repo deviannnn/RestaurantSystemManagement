@@ -1,63 +1,79 @@
 const axios = require('axios');
 const createError = require('http-errors');
+const inputChecker = require('../middlewares/input-checker');
 
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
 const RabbitMQService = require('../services/rabbitmq-service');
 
-const CatalogService = process.env.CATALOG_SERVICE_HOSTNAME || 'http://localhost:5000';
-const TableService = process.env.TABLE_SERVICE_HOSTNAME || 'http://localhost:5004';
+// // Function to check the validity of the table -> Expecting an { id } of table
+// async function fetchToGetTable(tableId) {
+//     try {
+//         const response = await axios.get(`${TableService}/api/v1/tables/${tableId}`);
+//         return response.data.data.table;
+//     } catch (error) {
+//         throw error;
+//     }
+// }
 
-// Function to check the validity of the items -> Expecting an array of items { itemId, quantity, note }
-async function fetchToGetValidItems(items) {
-    try {
-        const itemIds = items.map(item => item.itemId);
-        const response = await axios.post(`${CatalogService}/api/v1/items/batch`, { itemIds });
-        return response.data.data.items;
-    } catch (error) {
-        throw error;
-    }
-}
-
-// Function to check the validity of the table -> Expecting an { id } of table
-async function fetchToGetTable(tableId) {
-    try {
-        const response = await axios.get(`${TableService}/api/v1/tables/${tableId}`);
-        return response.data.data.table;
-    } catch (error) {
-        throw error;
-    }
-}
+// async function validateTableStatus(req, res, next) {
+//     const tableId = req.body.tableId;
+//     if (!tableId) {
+//         return next(createError(400, 'Table ID is required'));
+//     }
+//     try {
+//         const tableData = await fetchToGetTable(tableId);
+//         if (tableData.status !== 'free') {
+//             return next(createError(400, 'Table is currently not free'));
+//         }
+//         next();
+//     } catch (error) {
+//         return res.status(error.response.status).json(error.response.data);
+//     }
+// }
 
 // Function to handle add order items
-async function processAddOrderItems(orderId, items, itemDatas) {
+async function processAddOrderItems(orderId, itemDatas) {
     const orderItemsToCreate = [];
-    const orderItemPromises = items.map(async (item) => {
-        const itemData = itemDatas.find(data => data.id === item.itemId);
-        const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, item.itemId);
-        if (existingOrderItem) {
-            const newQuantity = existingOrderItem.quantity + item.quantity;
-            const newAmount = newQuantity * itemData.price;
-            await OrderItemService.updateOrderItem({
-                id: existingOrderItem.id,
-                quantity: newQuantity,
-                amount: newAmount
-            });
-        } else {
-            orderItemsToCreate.push({
-                orderId,
-                itemId: item.itemId,
-                quantity: item.quantity,
-                price: itemData.price,
-                amount: item.quantity * itemData.price
-            });
+
+    try {
+        const orderItemPromises = itemDatas.map(async (itemData) => {
+            try {
+                const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, itemData.itemId);
+
+                if (existingOrderItem) {
+                    const newQuantity = existingOrderItem.quantity + itemData.quantity;
+                    const newAmount = newQuantity * itemData.price;
+                    await OrderItemService.updateOrderItem({
+                        id: existingOrderItem.id,
+                        quantity: newQuantity,
+                        amount: newAmount
+                    });
+                } else {
+                    orderItemsToCreate.push({
+                        orderId,
+                        itemId: itemData.itemId,
+                        quantity: itemData.quantity,
+                        price: itemData.price,
+                        amount: itemData.quantity * itemData.price
+                    });
+                }
+            } catch (error) {
+                console.error(`Error processing item ${itemData.itemId}:`, error);
+            }
+        });
+
+        await Promise.all(orderItemPromises);
+
+        if (orderItemsToCreate.length > 0) {
+            await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
         }
-    });
 
-    await Promise.allSettled(orderItemPromises);
-
-    if (orderItemsToCreate.length > 0) {
-        await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
+        const updatedOrder = await OrderService.getOrderById(orderId);
+        return updatedOrder.toJSON();
+    } catch (error) {
+        console.error('Error processing order items:', error);
+        throw error;
     }
 }
 
@@ -94,36 +110,26 @@ async function processUpdateOrderItems(orderId, items) {
 }
 
 module.exports = {
-    async createOrder(req, res, next) {
+    createOrder: [inputChecker.checkTableStatus, async (req, res, next) => {
         try {
             const { tableId, userId } = req.body;
 
-            // validate free table
-            try {
-                const tableData = await fetchToGetTable(tableId);
-                if (tableData.status !== 'free') {
-                    return next(createError(400, 'Table is currently not free'));
-                }
-            } catch (error) {
-                return res.status(error.response.status).json(error.response.data);
-            }
-
             const newOrder = await OrderService.createOrder(tableId, userId);
+
+            /// Fanout Exchange
+            await RabbitMQService.publishOnOrderCreated(newOrder.toJSON()).catch(err => {
+                console.error('Error publishing to Exchange:', err);
+            });
+
             res.status(201).json({
                 success: true,
                 message: 'New order was created successfully',
                 data: { order: newOrder }
             });
-
-            /// Fanout Exchange
-            await RabbitMQService.publishOnOrderCreated(newOrder.toJSON()).catch(err => {
-                // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
-                console.error('Error publishing to Exchange:', err);
-            });
         } catch (error) {
             next(error);
         }
-    },
+    }],
 
     async getOrdersByUser(req, res, next) {
         try {
@@ -141,10 +147,10 @@ module.exports = {
         }
     },
 
-    async changeTable(req, res, next) {
+    changeTable: [inputChecker.checkTableStatus, async (req, res, next) => {
         try {
             const { orderId } = req.params;
-            const { newTableId } = req.body;
+            const { tableId } = req.body;
 
             // get info of current order with { orderId }
             const currentOrder = await OrderService.getOrderById(orderId);
@@ -152,34 +158,23 @@ module.exports = {
                 return next(createError(404, 'Order not found'));
             }
 
-            // validate free table
-            try {
-                const tableData = await fetchToGetTable(newTableId);
-                if (tableData.status !== 'free') {
-                    return next(createError(400, 'Table is currently not free'));
-                }
-            } catch (error) {
-                return res.status(error.response.status).json(error.response.data);
-            }
-
-            const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId: newTableId });
+            const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId });
             if (updatedOrder) {
+                // Pub to Table Service -> update status
+                await RabbitMQService.publishOnChangedTable({ oldTableId: currentOrder.tableId, newTableId: tableId }).catch(err => {
+                    console.error('Error publishing to Table Service:', err);
+                });
+
                 res.status(200).json({
                     success: true,
                     message: 'Change table successfully!',
-                    data: { updatedOrder }
-                });
-
-                // Pub to Table Service -> update status
-                await RabbitMQService.publishOnChangedTable({ oldTableId: currentOrder.tableId, newTableId }).catch(err => {
-                    // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
-                    console.error('Error publishing to Table Service:', err);
+                    data: { order: updatedOrder }
                 });
             }
         } catch (error) {
             next(error);
         }
-    },
+    }],
 
     async changeOrderStatus(req, res, next) {
         try {
@@ -204,59 +199,45 @@ module.exports = {
                 }
                 res.status(200).json(updatedOrder);
             } else {
-                res.status(404).json({ sucess: false, error: { message: 'Order not found', data: {} } });
+                return next(createError(404, 'Order not found'));
             }
         } catch (error) {
             next(error);
         }
     },
 
-    async addItemsToOrder(req, res, next) {
+    // Expecting an array of req.body.items as { itemId, quantity, note }
+    addItemsToOrder: [inputChecker.checkAddItemsToOrder, async (req, res, next) => {
         try {
             const { orderId } = req.params;
-            const items = req.body.items; // Expecting an array of items { itemId, quantity, note }
-
-            const order = await OrderService.getOrderById(orderId);
-            if (!order) {
-                res.status(404).json({ sucess: false, error: { message: 'Order not found', data: {} } });
-            }
-
-            let itemDatas;
-            try {
-                itemDatas = await fetchToGetValidItems(items);
-            } catch (error) {
-                if (error.response && error.response.status === 400) {
-                    return res.status(400).json(error.response.data);
-                }
-                throw error;
-            }
+            const itemDatas = req.itemDatas;  // Response expecting an array of items as { itemId, quantity, note, name, price }
 
             // Thêm hoặc cập nhật các order items
-            await processAddOrderItems(orderId, items, itemDatas);
+            const updatedOrder = await processAddOrderItems(orderId, itemDatas);
+            const dataToSend = {
+                orderId,
+                tableId: updatedOrder.tableId,
+                waiter: updatedOrder.userId,
+                items: updatedOrder.items.map(orderItem => {
+                    const itemData = itemDatas.find(data => data.itemId === orderItem.itemId);
+                    return {
+                        orderItemId: orderItem.id,
+                        ...itemData
+                    };
+                })
+            }
 
-            const updatedOrder = await OrderService.getOrderById(orderId);
-            res.status(200).json({ success: true, message: 'Items added to order successfully', data: { order: updatedOrder } });
-
-            const updatedOrderJSON = updatedOrder.toJSON();
-            updatedOrderJSON.items = updatedOrderJSON.items.map(orderItem => {
-                const item = items.find(item => item.itemId === orderItem.itemId);
-                const itemData = itemDatas.find(data => data.id === orderItem.itemId);
-                return {
-                    ...orderItem,
-                    name: itemData ? itemData.name : null,
-                    note: item ? item.note : null
-                };
-            });
-
-            await RabbitMQService.publishOrderItemOnCreated(updatedOrderJSON).catch(err => {
+            await RabbitMQService.publishOrderItemOnCreated(dataToSend).catch(err => {
                 // Log lỗi nếu cần, nhưng không chặn response đã gửi cho client
                 console.error('Error publishing to Kitchen Service:', err);
             });
+
+            res.status(200).json({ success: true, message: 'Items added to order successfully', data: { order: updatedOrder } });
         } catch (error) {
             console.log(error.message);
             next(error);
         }
-    },
+    }],
 
     async updateItemsToOrder(req, res, next) {
         try {
@@ -349,7 +330,7 @@ module.exports = {
                         data: { order }
                     });
                 } else {
-                    res.status(404).json({ sucess: false, error: { message: 'Order not found', data: {} } });
+                    return next(createError(404, 'Order not found'));
                 }
             } else {
                 const orders = await OrderService.getAllOrders();
@@ -376,7 +357,7 @@ module.exports = {
                     data: { updatedOrder }
                 });
             } else {
-                res.status(404).json({ sucess: false, error: { message: 'Order not found', data: {} } });
+                return next(createError(404, 'Order not found'));
             }
         } catch (error) {
             next(error);
@@ -394,7 +375,7 @@ module.exports = {
                     data: { deletedOrder }
                 });
             } else {
-                res.status(404).json({ sucess: false, error: { message: 'Order not found', data: {} } });
+                return next(createError(404, 'Order not found'));
             }
         } catch (error) {
             next(error);

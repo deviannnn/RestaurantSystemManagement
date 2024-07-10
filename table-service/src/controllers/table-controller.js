@@ -1,7 +1,8 @@
 const createError = require('http-errors');
-const TableService = require('../services/table-service');
 const { check } = require('express-validator');
 const validator = require('../middlewares/input-validator');
+
+const TableService = require('../services/table-service');
 
 module.exports = {
     createTable: [
@@ -52,7 +53,7 @@ module.exports = {
                         data: { table }
                     });
                 } else {
-                    next(createError(404, 'Table not found'));
+                    return next(createError(404, 'Table not found'));
                 }
             } else {
                 const tables = await TableService.getAllTables();
@@ -121,7 +122,7 @@ module.exports = {
                     data: { deletedTable }
                 });
             } else {
-                return res.status(404).json({ sucess: false, error: { message: 'Table not found', data: {} } });
+                return next(createError(404, 'Table not found'));
             }
         } catch (error) {
             next(error);

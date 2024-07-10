@@ -1,37 +1,40 @@
+const createError = require('http-errors');
+const inputChecker = require('../middlewares/input-checker');
+
 const ItemService = require('../services/item.service');
 const CategoryService = require('../services/category.service');
 const upload = require('../middlewares/upload');
 const connectRedis = require('../config/redis');
 const { validationResult, check } = require('express-validator');
 
-function validate(req, res, next) {
+const validator = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const errorMessages = errors.array().map(error => ({ field: error.path, msg: error.msg }));
-        return res.status(400).json({ success: false, message: errorMessages, data: {} });
+        const errorDetail = errors.array().map(error => ({ field: error.path, value: error.value, detail: error.msg }));
+        next(createError(400, 'Invalid input', { data: errorDetail }));
     }
     next();
 }
 
 module.exports = {
     // Create a new item
-    createItem : [
-    check('name')
-        .not().isEmpty().withMessage('Name cannot be empty.')
-        .isString().withMessage('Name must be a string.'),
-    check('price')
-        .not().isEmpty().withMessage('Price cannot be empty.')
-        .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
-    check('description')
-        .not().isEmpty().withMessage('Description cannot be empty.')
-        .isString().withMessage('Description must be a string.'),
-    check('available')
-        .not().isEmpty().withMessage('Available status cannot be empty.')
-        .isBoolean().withMessage('Available status must be a boolean.'),
-    check('categoryId')
-        .not().isEmpty().withMessage('Category ID cannot be empty.')
-        .isInt({ min: 1 }).withMessage('Category ID must be a positive integer.'),
-    validate,
+    createItem: [
+        check('name')
+            .not().isEmpty().withMessage('Name cannot be empty.')
+            .isString().withMessage('Name must be a string.'),
+        check('price')
+            .not().isEmpty().withMessage('Price cannot be empty.')
+            .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
+        check('description')
+            .not().isEmpty().withMessage('Description cannot be empty.')
+            .isString().withMessage('Description must be a string.'),
+        check('available')
+            .not().isEmpty().withMessage('Available status cannot be empty.')
+            .isBoolean().withMessage('Available status must be a boolean.'),
+        check('categoryId')
+            .not().isEmpty().withMessage('Category ID cannot be empty.')
+            .isInt({ min: 1 }).withMessage('Category ID must be a positive integer.'),
+        validator,
         upload.single('image'),
         async (req, res, next) => {
             try {
@@ -117,7 +120,7 @@ module.exports = {
                 return res.status(200).json({
                     sucess: true,
                     message: 'Get all items for client successfully!',
-                    data:  {find}
+                    data: { find }
                 });
             } else {
                 const client = await connectRedis();
@@ -144,51 +147,45 @@ module.exports = {
         }
     },
 
-    async batchValidator(req, res, next) {
+    batchValidator: [inputChecker.checkItemIds, async (req, res, next) => {
         try {
             const { itemIds } = req.body; // Expecting an array of itemIds
             const { validItems, invalidItems } = await ItemService.getItemsByListIds(itemIds);
 
             if (invalidItems.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    error: { message: 'Some items are not valid', data: { items: invalidItems } }
-                });
+                return next(createError(400, 'Some items are not valid', { data: { items: invalidItems } }));
             }
 
             res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
         } catch (error) {
             next(error);
         }
-    },
+    }],
 
     // Update item by ID
-    updateItem : [
-        check('id')
-            .not().isEmpty().withMessage('ID cannot be empty.')
-            .isInt({ min: 1 }).withMessage('ID must be a positive integer.'),
-        check('name')
+    updateItem: [
+        check('name').optional()
             .not().isEmpty().withMessage('Name cannot be empty.')
             .isString().withMessage('Name must be a string.'),
-        check('price')
+        check('price').optional()
             .not().isEmpty().withMessage('Price cannot be empty.')
             .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
         // check('image')
         //     .not().isEmpty().withMessage('Image cannot be empty.')
         //     .isURL().withMessage('Image must be a valid URL.'),
-        check('description')
+        check('description').optional()
             .not().isEmpty().withMessage('Description cannot be empty.')
             .isString().withMessage('Description must be a string.'),
-        check('available')
+        check('available').optional()
             .not().isEmpty().withMessage('Available status cannot be empty.')
             .isBoolean().withMessage('Available status must be a boolean.'),
-        check('active')
+        check('active').optional()
             .not().isEmpty().withMessage('Active status cannot be empty.')
             .isBoolean().withMessage('Active status must be a boolean.'),
-        check('categoryId')
+        check('categoryId').optional()
             .not().isEmpty().withMessage('Category ID cannot be empty.')
             .isInt({ min: 1 }).withMessage('Category ID must be a positive integer.'),
-        validate,
+        validator,
         // upload.single('image'), // Middleware xử lý upload ảnh
         async (req, res, next) => {
             try {

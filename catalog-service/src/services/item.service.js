@@ -5,7 +5,7 @@ module.exports = {
     async createItem(name, price, image, description, available, active, categoryId) {
         try {
             return Item.create({ name, price, image, description, available, active, categoryId })
-            .then((newItem) => newItem.get({ plain: true }));
+                .then((newItem) => newItem.get({ plain: true }));
         } catch (error) {
             console.error('Error create item:', error);
             throw error;
@@ -63,9 +63,9 @@ module.exports = {
 
             // Phân loại các mục hợp lệ và không hợp lệ
             allItems.forEach(item => {
-                const itemData = { id: item.id, name: item.name, price: item.price };
+                const itemData = { id: item.id, name: item.name };
                 if (item.available && item.active) {
-                    validItems.push(itemData);
+                    validItems.push({ ...itemData, price: item.price });
                 } else {
                     invalidItems.push({ ...itemData, detail: 'Unavailable' });
                 }
