@@ -6,9 +6,9 @@ const OrderItemController = require('../controllers/order-item-controller');
 
 // Orders CRUD
 router.post('/orders', OrderController.createOrder);
-router.get('/orders/:id?', OrderController.getOrders);
-router.put('/orders/:id', OrderController.updateOrder);
-router.delete('/orders/:id', OrderController.deleteOrder);
+router.get('/orders/:orderId?', OrderController.getOrders);
+router.put('/orders/:orderId', OrderController.updateOrder);
+router.delete('/orders/:orderId', OrderController.deleteOrder);
 
 // Orders Business Logic
 router.get('/orders/users/:userId', OrderController.getOrdersByUser);
