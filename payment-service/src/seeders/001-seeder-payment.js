@@ -7,6 +7,7 @@ module.exports = {
       {
         userId: 4,
         orderId: 1,
+        totalItems: 3,
         subAmount: 45.00,
         totalSurcharge: 0.85,
         totalDiscount: 0.00,
@@ -18,6 +19,7 @@ module.exports = {
       {
         userId: 4,
         orderId: 2,
+        totalItems: 5,
         subAmount: 75.00,
         totalSurcharge: 141.25,
         totalDiscount: 0.00,
@@ -29,6 +31,7 @@ module.exports = {
       {
         userId: 5,
         orderId: 3,
+        totalItems: 2,
         subAmount: 30.00,
         totalSurcharge: 280.9,
         totalDiscount: 200.00,

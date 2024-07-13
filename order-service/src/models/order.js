@@ -22,8 +22,6 @@ module.exports = (sequelize, DataTypes) => {
     Order.init({
         tableId: { type: DataTypes.INTEGER, allowNull: false },
         userId: { type: DataTypes.INTEGER, allowNull: false },
-        totalQuantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-        subAmount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         status: {
             type: DataTypes.ENUM(...ALLOWED_STATUSES),
             allowNull: false,

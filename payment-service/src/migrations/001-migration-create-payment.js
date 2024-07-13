@@ -18,6 +18,11 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.INTEGER
             },
+            totalItems: {
+                allowNull: false,
+                type: Sequelize.INTEGER,
+                defaultValue: 0
+            },
             subAmount: {
                 allowNull: false,
                 type: Sequelize.FLOAT,

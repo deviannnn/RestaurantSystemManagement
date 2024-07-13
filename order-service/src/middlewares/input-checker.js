@@ -6,6 +6,7 @@ const validator = require('./vaildator');
 const CatalogService = process.env.CATALOG_SERVICE_HOSTNAME || 'http://localhost:5000';
 const TableService = process.env.TABLE_SERVICE_HOSTNAME || 'http://localhost:5004';
 const OrderService = require('../services/order-service');
+const OrderItemService = require('../services/order-item-service');
 
 module.exports = {
     checkTable: [
@@ -26,17 +27,26 @@ module.exports = {
     checkOrderInProgress: async (req, res, next) => {
         try {
             const { orderId } = req.params;
+            
             const orderData = await OrderService.getOrderById(orderId);
-
-            if (!orderData) {
-                return next(createError(404, 'Order not found'));
-            }
-
-            if (orderData.status !== 'in_progress') {
-                return next(createError(400, 'Order not in progress'));
-            }
+            if (!orderData) return next(createError(404, 'Order not found'));
+            if (orderData.status !== 'in_progress') return next(createError(400, 'Order not in progress'));
 
             req.order = orderData;
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    checkOrderItem: async (req, res, next) => {
+        try {
+            const { orderItemId } = req.params;
+
+            const orderItemData = await OrderItemService.getOrderItemById(orderItemId);
+            if (!orderItemData) return next(createError(404, 'OrderItem not found'));
+
+            req.orderItem = orderItemData;
             next();
         } catch (error) {
             next(error);
@@ -89,7 +99,7 @@ module.exports = {
     ],
 
     checkBodyOrderItemStatus: [
-        check('status').notEmpty().isIn(['pending', 'in_progress', 'finished', 'cancelled']).withMessage('OrderItem Status must be either \'pending\', \'in_progress\', \'finished\', or \'cancelled\''),
+        check('status').notEmpty().isIn(['in_progress', 'finished', 'cancelled']).withMessage('OrderItem Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
         validator
     ]
 };

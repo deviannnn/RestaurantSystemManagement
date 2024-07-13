@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const { Order, OrderItem } = require('../models');
 
 const includeOptions = [
@@ -18,9 +18,38 @@ module.exports = {
 
     async getOrderById(id) {
         try {
-            return await Order.findByPk(id, {
-                include: includeOptions
+            const order = await Order.findOne({
+                where: { id },
+                attributes: [
+                    'id',
+                    'tableId',
+                    'userId',
+                    'status',
+                    'createdAt',
+                    'updatedAt',
+                    [fn('SUM', literal('CASE WHEN items.active = true THEN items.quantity ELSE 0 END')), 'totalItems'],
+                    [fn('SUM', literal('CASE WHEN items.active = true THEN items.amount ELSE 0 END')), 'subAmount']
+                ],
+                include: {
+                    model: OrderItem,
+                    as: 'items',
+                    attributes: []
+                },
+                group: ['Order.id']
             });
+
+
+            if (!order) {
+                return null;
+            }
+
+            order.dataValues.subAmount = parseFloat(order.dataValues.subAmount.toFixed(1));
+            order.dataValues.totalItems = Number(order.dataValues.totalItems);
+            order.dataValues.items = await OrderItem.findAll({
+                where: { orderId: order.id }
+            });
+
+            return order;
         } catch (error) {
             console.error('Error getting order by ID:', error);
             throw error;
@@ -29,9 +58,7 @@ module.exports = {
 
     async getAllOrders() {
         try {
-            return await Order.findAll({
-                include: includeOptions
-            });
+            return await Order.findAll();
         } catch (error) {
             console.error('Error getting all orders:', error);
             throw error;

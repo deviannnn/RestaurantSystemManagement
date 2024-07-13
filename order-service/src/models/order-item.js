@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
                 }
             }
         },
-        active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true }
+        active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
     }, {
         sequelize,
         modelName: 'OrderItem',

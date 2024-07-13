@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     Payment.init({
         orderId: { type: DataTypes.INTEGER, allowNull: false },
         userId: { type: DataTypes.INTEGER, allowNull: false },
+        totalItems: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         subAmount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         totalSurcharge: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
         totalDiscount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },

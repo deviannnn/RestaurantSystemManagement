@@ -146,6 +146,11 @@ module.exports = {
         }
     ],
 
+    /** Expected Input
+    * 
+    * { status, fromDate, toDate } = req.body;
+    * 
+    */
     async getOrdersByUser(req, res, next) {
         try {
             const { userId } = req.params;
@@ -181,17 +186,16 @@ module.exports = {
                 const newTableId = req.table.id;
 
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId: newTableId });
-                if (updatedOrder) {
-                    await RabbitMQService.publishOnChangedTable({ oldTableId, newTableId }).catch(err => {
-                        console.error('Error publishing On Changed Table:', err);
-                    });
 
-                    res.status(200).json({
-                        success: true,
-                        message: 'Change table successfully!',
-                        data: { order: updatedOrder }
-                    });
-                }
+                await RabbitMQService.publishOnChangedTable({ oldTableId, newTableId }).catch(err => {
+                    console.error('Error publishing On Changed Table:', err);
+                });
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Change table successfully!',
+                    data: { order: updatedOrder }
+                });
             } catch (error) {
                 next(error);
             }
@@ -214,10 +218,10 @@ module.exports = {
 
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, status });
                 if (updatedOrder) {
-                    if (updatedOrder.status === 'finished') {
-                        // Pub to Payment Service -> create, update amount
+                    if (status === 'finished') {
+                        // Pub to Payment Service -> create
                         // Pub to Table Service -> update status
-                    } else if (updatedOrder.status === 'cancelled') {
+                    } else if (status === 'cancelled') {
                         // Pub to Table Service -> update status
                     }
                     res.status(200).json(updatedOrder);
@@ -246,6 +250,7 @@ module.exports = {
 
                 // add or update order items
                 const updatedOrder = await processAddOrderItems(orderId, itemDatas);
+
                 const dataToSend = {
                     orderId,
                     tableId: updatedOrder.tableId,
@@ -263,7 +268,11 @@ module.exports = {
                     console.error('Error publishing OrderItem On Created:', err);
                 });
 
-                res.status(200).json({ success: true, message: 'Items added to order successfully', data: { order: updatedOrder } });
+                res.status(200).json({
+                    success: true,
+                    message: 'Items added to order successfully!',
+                    data: { order: updatedOrder }
+                });
             } catch (error) {
                 console.log(error.message);
                 next(error);
@@ -279,13 +288,14 @@ module.exports = {
      */
     updateItemsToOrder: [
         inputChecker.checkOrderInProgress,
-        inputChecker.checkBodyOrderItems, 
+        inputChecker.checkBodyOrderItems,
         async (req, res, next) => {
             try {
                 const orderId = req.order.id;
                 const orderItems = req.body.orderItems;
 
                 const updatedOrder = await processUpdateOrderItems(orderId, orderItems);
+
                 const dataToSend = {
                     orderId,
                     tableId: updatedOrder.tableId,
@@ -299,29 +309,37 @@ module.exports = {
                     console.error('Error publishing OrderItem On Updated:', err);
                 });
 
-                res.status(200).json({ success: true, message: 'Items updated to order successfully', data: { order: updatedOrder } });
+                res.status(200).json({
+                    success: true,
+                    message: 'Items updated to order successfully!',
+                    data: { order: updatedOrder }
+                });
             } catch (error) {
                 next(error);
             }
         }
     ],
 
-    async requestCancelOrderItem(req, res, next) {
-        try {
-            const { orderItemId } = req.params;
-
-            const requestedOrderItem = await OrderItemService.getOrderItemById(orderItemId);
-            if (requestedOrderItem) {
+    /** Expected Input
+     * 
+     * orderItemId = req.params
+     * 
+     */
+    requestCancelOrderItem: [
+        inputChecker.checkOrderItem,
+        async (req, res, next) => {
+            try {
                 // Pub to Kitchen Service -> new request
-                
-                res.status(200).json({ msg: 'The request to cancel the items has been sent to the chef' });
-            } else {
-                return next(createError(404, 'OrderItem not found'));
+                res.status(200).json({
+                    success: true,
+                    message: 'The request to cancel the order items has been sent to the chef!',
+                    data: { orderItem: req.orderItem }
+                });
+            } catch (error) {
+                next(error);
             }
-        } catch (error) {
-            next(error);
         }
-    },
+    ],
 
     /** Expected Input
      * 
@@ -330,26 +348,30 @@ module.exports = {
      * 
      */
     changeOrderItemStatus: [
+        inputChecker.checkOrderItem,
         inputChecker.checkBodyOrderItemStatus,
         async (req, res, next) => {
             try {
                 const { orderItemId } = req.params;
                 const { status } = req.body;
+                const updatePayload = { id: orderItemId, status, active: false };
 
-                const updatedOrderItem = await OrderItemService.updateOrderItem({ id: orderItemId, status });
-                if (updatedOrderItem) {
-                    if (updatedOrderItem.status === 'in_progress') {
-                        // publish message to 'orders item' exchange
-                    } else if (updatedOrderItem.status === 'finished') {
-                        // -> update totalQuantity, subAmount
-                        // Pub to Waiter Service
-                    } else if (updatedOrderItem.status === 'cancelled') {
-                        // Pub to Waiter Service
-                    }
-                    res.status(200).json(updatedOrderItem);
-                } else {
-                    return next(createError(404, 'OrderItem not found'));
+                if (status === 'finished') {
+                    updatePayload.active = true;
+                    // Publish to Waiter Service
+                } else if (status === 'in_progress') {
+                    // Publish message to 'orders item' exchange
+                } else if (status === 'cancelled') {
+                    // Publish to Waiter Service
                 }
+
+                const updatedOrderItem = await OrderItemService.updateOrderItem(updatePayload);
+
+                res.status(200).json({
+                    success: true,
+                    message: 'OrderItem updated to order successfully!',
+                    data: { orderItem: updatedOrderItem }
+                });
             } catch (error) {
                 next(error);
             }
@@ -396,16 +418,15 @@ module.exports = {
             try {
                 const { orderId } = req.params;
                 const { totalQuantity, subAmount, status, tableId } = req.body;
+
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, totalQuantity, subAmount, status, tableId });
-                if (updatedOrder) {
-                    res.status(200).json({
-                        sucess: true,
-                        message: 'Update order successfully!',
-                        data: { order: updatedOrder }
-                    });
-                } else {
-                    return next(createError(404, 'Order not found'));
-                }
+                if (!updatedOrder) return next(createError(404, 'Order not found'));
+
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Update order successfully!',
+                    data: { order: updatedOrder }
+                });
             } catch (error) {
                 next(error);
             }
@@ -420,16 +441,15 @@ module.exports = {
     async deleteOrder(req, res, next) {
         try {
             const { orderId } = req.params;
+
             const deletedOrder = await OrderService.deleteOrder(orderId);
-            if (deletedOrder) {
-                res.status(200).json({
-                    success: true,
-                    message: 'Delete order successfully!',
-                    data: { order: deletedOrder }
-                });
-            } else {
-                return next(createError(404, 'Order not found'));
-            }
+            if (!deletedOrder) return next(createError(404, 'Order not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete order successfully!',
+                data: { order: deletedOrder }
+            });
         } catch (error) {
             next(error);
         }

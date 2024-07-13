@@ -18,16 +18,6 @@ module.exports = {
                 allowNull: false,
                 type: Sequelize.INTEGER
             },
-            totalQuantity: {
-                allowNull: false,
-                type: Sequelize.INTEGER,
-                defaultValue: 0
-            },
-            subAmount: {
-                allowNull: false,
-                type: Sequelize.FLOAT,
-                defaultValue: 0
-            },
             status: {
                 allowNull: false,
                 type: Sequelize.ENUM,
