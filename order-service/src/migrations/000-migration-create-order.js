@@ -24,6 +24,11 @@ module.exports = {
                 values: ['in_progress', 'finished', 'cancelled'],
                 defaultValue: 'in_progress'
             },
+            active: {
+                allowNull: false,
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE

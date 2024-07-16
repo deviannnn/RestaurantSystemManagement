@@ -31,18 +31,8 @@ wss.on('connection', (ws) => {
     try {
         await RabbitMQ.connect();
 
-        await RabbitMQ.consumeExchange('new-order-created', (orderData) => {
-            console.log('\n[CREATED] Received order:', orderData);
-            // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
-            wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(orderData));
-                }
-            });
-        });
-
-        await RabbitMQ.consumeQueue('order-to-kitchen', (orderData) => {
-            console.log(`\n[${orderData.type}] Received order:`, orderData);
+        await RabbitMQ.consumeQueue('order-to-waiter', (orderData) => {
+            console.log(`\nReceived order:`, orderData);
             // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
             wss.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -56,4 +46,4 @@ wss.on('connection', (ws) => {
     }
 })();
 
-console.log(`[WebSocketServer] KitchenService is listening on port: ${WEBSOCKET_PORT}`);
+console.log(`[WebSocketServer] WaiterService is listening on port: ${WEBSOCKET_PORT}`);

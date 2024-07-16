@@ -93,11 +93,6 @@ module.exports = {
         validator
     ],
 
-    checkBodyOrderStatus: [
-        check('status').notEmpty().isIn(['finished', 'cancelled']).withMessage('Order Status must be either \'finished\' or \'cancelled\''),
-        validator
-    ],
-
     checkBodyOrderItemStatus: [
         check('status').notEmpty().isIn(['in_progress', 'finished', 'cancelled']).withMessage('OrderItem Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
         validator

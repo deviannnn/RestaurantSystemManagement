@@ -1,9 +1,5 @@
-const { Op, fn, col, literal } = require('sequelize');
+const { Op, fn, literal } = require('sequelize');
 const { Order, OrderItem } = require('../models');
-
-const includeOptions = [
-    { model: OrderItem, as: 'items' }
-];
 
 module.exports = {
     async createOrder(tableId, userId) {
@@ -30,11 +26,7 @@ module.exports = {
                     [fn('SUM', literal('CASE WHEN items.active = true THEN items.quantity ELSE 0 END')), 'totalItems'],
                     [fn('SUM', literal('CASE WHEN items.active = true THEN items.amount ELSE 0 END')), 'subAmount']
                 ],
-                include: {
-                    model: OrderItem,
-                    as: 'items',
-                    attributes: []
-                },
+                include: { model: OrderItem, as: 'items', attributes: [] },
                 group: ['Order.id']
             });
 
@@ -88,7 +80,7 @@ module.exports = {
 
             const orders = await Order.findAll({
                 where: whereClause,
-                include: includeOptions
+                include: { model: OrderItem, as: 'items' }
             });
             return orders;
         } catch (error) {

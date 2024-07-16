@@ -10,27 +10,27 @@ module.exports = {
         }
     },
 
-    async publishOnChangedTable(tableData) {
+    async publishOnOpenCloseTable(tableData) {
         try {
-            await RabbitMQ.publishToQueue('table-changed', tableData);
+            await RabbitMQ.publishToQueue('open-close-table', tableData);
         } catch (error) {
             console.error('Error publishing table to table service:', error);
             throw error;
         }
     },
 
-    async publishOrderItemOnCreated(orderData) {
+    async publishOrderToKitchen(orderData) {
         try {
-            await RabbitMQ.publishToQueue('added-items-to-order', orderData);
+            await RabbitMQ.publishToQueue('order-to-kitchen', orderData);
         } catch (error) {
             console.error('Error publishing order to kitchen service:', error);
             throw error;
         }
     },
 
-    async publishOrderItemOnUpdated(orderData) {
+    async publishOrderToWaiter(orderData) {
         try {
-            await RabbitMQ.publishToQueue('updated-items-to-order', orderData);
+            await RabbitMQ.publishToQueue('order-to-waiter', orderData);
         } catch (error) {
             console.error('Error publishing order to kitchen service:', error);
             throw error;

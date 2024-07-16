@@ -187,8 +187,9 @@ module.exports = {
 
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId: newTableId });
 
-                await RabbitMQService.publishOnChangedTable({ oldTableId, newTableId }).catch(err => {
-                    console.error('Error publishing On Changed Table:', err);
+                const dataToSend = { open: oldTableId, close: newTableId };
+                await RabbitMQService.publishOnOpenCloseTable(dataToSend).catch(err => {
+                    console.error('Error publishing On Open-Close Table:', err);
                 });
 
                 res.status(200).json({
@@ -205,29 +206,26 @@ module.exports = {
     /** Expected Input
      * 
      * orderId = req.params
-     * { status } = req.body
      * 
      */
-    changeOrderStatus: [
+    cancelOrder: [
         inputChecker.checkOrderInProgress,
-        inputChecker.checkBodyOrderStatus,
         async (req, res, next) => {
             try {
-                const orderId = req.order.id;
-                const { status } = req.body;
+                const order = req.order;
 
-                const updatedOrder = await OrderService.updateOrder({ id: orderId, status });
-                if (updatedOrder) {
-                    if (status === 'finished') {
-                        // Pub to Payment Service -> create
-                        // Pub to Table Service -> update status
-                    } else if (status === 'cancelled') {
-                        // Pub to Table Service -> update status
-                    }
-                    res.status(200).json(updatedOrder);
-                } else {
-                    return next(createError(404, 'Order not found'));
-                }
+                const updatedOrder = await OrderService.updateOrder({ id: order.id, status: 'cancelled' });
+
+                const dataToSend = { open: order.tableId, close: null };
+                await RabbitMQService.publishOnOpenCloseTable(dataToSend).catch(err => {
+                    console.error('Error publishing On Open-Close Table:', err);
+                });
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Cancel order successfully!',
+                    data: { order: updatedOrder }
+                });
             } catch (error) {
                 next(error);
             }
@@ -252,6 +250,7 @@ module.exports = {
                 const updatedOrder = await processAddOrderItems(orderId, itemDatas);
 
                 const dataToSend = {
+                    type: 'add',
                     orderId,
                     tableId: updatedOrder.tableId,
                     waiter: updatedOrder.userId,
@@ -264,8 +263,8 @@ module.exports = {
                     })
                 }
 
-                await RabbitMQService.publishOrderItemOnCreated(dataToSend).catch(err => {
-                    console.error('Error publishing OrderItem On Created:', err);
+                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
+                    console.error('Error publishing Order To Kitchen:', err);
                 });
 
                 res.status(200).json({
@@ -297,6 +296,7 @@ module.exports = {
                 const updatedOrder = await processUpdateOrderItems(orderId, orderItems);
 
                 const dataToSend = {
+                    type: 'update',
                     orderId,
                     tableId: updatedOrder.tableId,
                     waiter: updatedOrder.userId,
@@ -305,8 +305,8 @@ module.exports = {
                     })
                 }
 
-                await RabbitMQService.publishOrderItemOnUpdated(dataToSend).catch(err => {
-                    console.error('Error publishing OrderItem On Updated:', err);
+                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
+                    console.error('Error publishing Order To Kitchen:', err);
                 });
 
                 res.status(200).json({
@@ -329,11 +329,17 @@ module.exports = {
         inputChecker.checkOrderItem,
         async (req, res, next) => {
             try {
-                // Pub to Kitchen Service -> new request
+                const orderItem = req.orderItem;
+
+                const dataToSend = { type: 'cancel', items: orderItem };
+                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
+                    console.error('Error publishing Order To Kitchen:', err);
+                });
+
                 res.status(200).json({
                     success: true,
                     message: 'The request to cancel the order items has been sent to the chef!',
-                    data: { orderItem: req.orderItem }
+                    data: { orderItem }
                 });
             } catch (error) {
                 next(error);
@@ -352,20 +358,16 @@ module.exports = {
         inputChecker.checkBodyOrderItemStatus,
         async (req, res, next) => {
             try {
-                const { orderItemId } = req.params;
+                const orderItem = req.orderItem;
                 const { status } = req.body;
-                const updatePayload = { id: orderItemId, status, active: false };
-
-                if (status === 'finished') {
-                    updatePayload.active = true;
-                    // Publish to Waiter Service
-                } else if (status === 'in_progress') {
-                    // Publish message to 'orders item' exchange
-                } else if (status === 'cancelled') {
-                    // Publish to Waiter Service
-                }
+                const updatePayload = { id: orderItem.id, status, active: status === 'finished' ? true : false };
 
                 const updatedOrderItem = await OrderItemService.updateOrderItem(updatePayload);
+
+                const dataToSend = { updatedOrderItem };
+                await RabbitMQService.publishOrderToWaiter(dataToSend).catch(err => {
+                    console.error('Error publishing Order To Waiter:', err);
+                });
 
                 res.status(200).json({
                     success: true,

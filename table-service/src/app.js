@@ -25,14 +25,14 @@ connectdb(); //Test Database connection
             }
         });
 
-        await RabbitMQ.consumeQueue('table-changed', async (tableData) => {
+        await RabbitMQ.consumeQueue('open-close-table', async (tableData) => {
             try {
                 console.log('\n[UPDATED] Received table:', tableData);
                 // cập nhật trạng thái bàn
-                await TableService.updateTable({ id: tableData.oldTableId, status: 'free' });
-                await TableService.updateTable({ id: tableData.newTableId, status: 'occupied' });
+                if (tableData.open) await TableService.updateTable({ id: tableData.open, status: 'free' });
+                if (tableData.close) await TableService.updateTable({ id: tableData.close, status: 'occupied' });
             } catch (error) {
-                console.error('Error updating table status for table change:', error);
+                console.error('Error updating table status for table open-close:', error);
             }
         });
     } catch (error) {

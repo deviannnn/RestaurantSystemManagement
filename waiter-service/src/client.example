@@ -1,0 +1,20 @@
+const WebSocket = require('ws');
+const token = 'your_auth_token';
+
+const ws = new WebSocket('ws://localhost:8080', {
+    headers: {
+        Authorization: `Bearer ${token}`
+    }
+});
+
+ws.on('open', () => {
+    console.log('WebSocket connection opened.');
+});
+
+ws.on('message', (data) => {
+    console.log('Message from server:', data);
+});
+
+ws.on('close', () => {
+    console.log('WebSocket connection closed.');
+});

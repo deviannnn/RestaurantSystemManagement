@@ -13,7 +13,7 @@ router.delete('/orders/:orderId', OrderController.deleteOrder);
 // Orders Business Logic
 router.get('/orders/users/:userId', OrderController.getOrdersByUser);
 router.put('/orders/:orderId/change-table', OrderController.changeTable);
-router.put('/orders/:orderId/change-status', OrderController.changeOrderStatus);
+router.put('/orders/:orderId/cancel', OrderController.cancelOrder);
 router.post('/orders/:orderId/add-items', OrderController.addItemsToOrder);
 router.put('/orders/:orderId/updated-items', OrderController.updateItemsToOrder);
 

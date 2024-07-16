@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-WORKDIR /restaurant/backend/kitchen-service
+WORKDIR /restaurant/backend/waiter-service
 
 COPY package*.json ./
 
