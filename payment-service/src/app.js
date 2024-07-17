@@ -6,9 +6,9 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
 const convertTimezone = require('./middlewares/timezone');
-const connectDB = require('./config/connectDB');
+const connectdb = require('./config/connectdb');
 
-connectDB(); //Test Database connection
+connectdb(); //Test Database connection
 
 const app = express();
 
@@ -28,18 +28,42 @@ app.use(function (req, res, next) { next(createError(404)); });
 app.use(function (err, req, res, next) {
     console.error(err.stack);
 
-    const getError = (status) => {
-        switch (status) {
+    const getError = (err) => {
+        switch (err.status) {
+            case 400:
+                return {
+                    header: 'Bad Request',
+                    message: err.message || 'Your session has expired or you do not have the necessary permissions to access this resource.'
+                };
             case 401:
-                return { status: 401, error: 'Unauthorized', message: 'Your login session has expired. You are not allowed to access this resource.' };
+                return {
+                    header: 'Unauthorized Access',
+                    message: err.message || 'Your session has expired or you do not have the necessary permissions to access this resource.'
+                };
+            case 403:
+                return {
+                    header: 'Access Denied',
+                    message: err.message || 'You do not have the required permissions to access this resource.'
+                };
+            case 404:
+                return {
+                    header: 'Resource Not Found',
+                    message: err.message || 'The resource you are looking for could not be located.'
+                };
             case 429:
-                return { status: 429, error: 'Too Many Requests', message: 'Too many requests from this IP, please try again later.' };
+                return {
+                    header: 'Rate Limit Exceeded',
+                    message: err.message || 'You have made too many requests in a short period. Please try again later.'
+                };
             default:
-                return { status: 404, error: 'Not Found', message: 'The requested resource could not be found.' };
+                return {
+                    header: 'Internal Server Error',
+                    message: err.message || 'An unexpected error occurred on the server. Please try again later or contact support if the issue persists.'
+                }
         }
     }
 
-    res.status(err.status || 500).json(getError(err.status || 500));
+    res.status(err.status || 500).json({ success: false, error: { ...getError(err), data: err.data || {} } });
 });
 
 module.exports = app;

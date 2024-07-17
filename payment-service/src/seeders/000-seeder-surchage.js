@@ -57,24 +57,6 @@ module.exports = {
         active: true,
         createdAt: new Date(),
         updatedAt: new Date()
-      },
-      {
-        name: 'Packaging Support - Motorcycle',
-        isPercent: false,
-        value: -5.0,
-        description: 'Support for motorcycle parking costs',
-        active: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        name: 'Parking Support - Car',
-        isPercent: false,
-        value: -20.0,
-        description: 'Support for car parking costs',
-        active: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
       }
     ], {});
   },

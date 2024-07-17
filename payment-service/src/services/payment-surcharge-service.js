@@ -9,7 +9,7 @@ module.exports = {
     async createPaymentSurcharge(paymentId, surchargeId, value, amount) {
         try {
             const newPaymentSurcharge = await PaymentSurcharge.create({ paymentId, surchargeId, value, amount });
-            return newPaymentSurcharge.get({ plain: true });
+            return newPaymentSurcharge;
         } catch (error) {
             console.error('Error creating payment surcharge:', error);
             throw error;
@@ -36,7 +36,7 @@ module.exports = {
         }
     },
 
-    async updatePaymentSurcharge(id, paymentId, surchargeId, value, amount) {
+    async updatePaymentSurcharge({id, paymentId, surchargeId, value, amount}) {
         try {
             const [updated] = await PaymentSurcharge.update({ paymentId, surchargeId, value, amount }, { where: { id } });
             if (updated) {

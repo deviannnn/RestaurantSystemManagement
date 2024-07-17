@@ -28,15 +28,13 @@ module.exports = {
                 },
                 onUpdate: 'CASCADE'
             },
-            surchargeValue: {
+            value: {
                 allowNull: false,
-                type: Sequelize.STRING,
-                defaultValue: 0
+                type: Sequelize.FLOAT
             },
             amount: {
                 allowNull: false,
-                type: Sequelize.FLOAT,
-                defaultValue: 0
+                type: Sequelize.FLOAT
             },
             createdAt: {
                 allowNull: false,

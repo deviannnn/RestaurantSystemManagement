@@ -21,6 +21,7 @@ module.exports = {
                     'tableId',
                     'userId',
                     'status',
+                    'active',
                     'createdAt',
                     'updatedAt',
                     [fn('SUM', literal('CASE WHEN items.active = true THEN items.quantity ELSE 0 END')), 'totalItems'],
@@ -89,10 +90,10 @@ module.exports = {
         }
     },
 
-    async updateOrder({ id, totalQuantity, subAmount, status, tableId }) {
+    async updateOrder({ id, status, active, tableId }) {
         try {
             const [updated] = await Order.update(
-                { totalQuantity, subAmount, status, tableId },
+                { status, active, tableId },
                 { where: { id } }
             );
             if (updated) {

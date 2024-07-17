@@ -16,16 +16,16 @@ module.exports = (sequelize, DataTypes) => {
                 as: 'payment'
             });
 
-            // this.belongsTo(models.Surcharge, {
-            //     foreignKey: 'surchargeId',
-            //     as: 'surcharge'
-            // });
+            this.belongsTo(models.Surcharge, {
+                foreignKey: 'surchargeId',
+                as: 'surcharge'
+            });
         }
     }
 
     PaymentSurcharge.init({
-        surchargeValue: { type: DataTypes.STRING, allowNull: false },
-        amount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 }
+        value: { type: DataTypes.FLOAT, allowNull: false },
+        amount: { type: DataTypes.FLOAT, allowNull: false }
     }, {
         sequelize,
         modelName: 'PaymentSurcharge',

@@ -147,20 +147,23 @@ module.exports = {
         }
     },
 
-    batchValidator: [inputChecker.checkItemIds, async (req, res, next) => {
-        try {
-            const { itemIds } = req.body; // Expecting an array of itemIds
-            const { validItems, invalidItems } = await ItemService.getItemsByListIds(itemIds);
+    batchValidator: [
+        inputChecker.checkItemIds,
+        async (req, res, next) => {
+            try {
+                const { itemIds } = req.body; // Expecting an array of itemIds
+                const { validItems, invalidItems } = await ItemService.getItemsByListIds(itemIds);
 
-            if (invalidItems.length > 0) {
-                return next(createError(400, 'Some items are not valid', { data: { items: invalidItems } }));
+                if (invalidItems.length > 0) {
+                    return next(createError(400, 'Some items are not valid', { data: { items: invalidItems } }));
+                }
+
+                res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
+            } catch (error) {
+                next(error);
             }
-
-            res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
-        } catch (error) {
-            next(error);
         }
-    }],
+    ],
 
     // Update item by ID
     updateItem: [

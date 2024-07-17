@@ -118,17 +118,15 @@ module.exports = {
     * 
     */
     createOrder: [
-        inputChecker.checkTable,
+        inputChecker.checkBodyTable,
+        inputChecker.checkTableExist,
+        inputChecker.checkTableIsFree,
         async (req, res, next) => {
             try {
-                const table = req.table;
-                if (!table || table.status !== 'free') {
-                    return next(createError(400, 'Table is currently not free'));
-                }
-
+                const tableId = req.table.id;
                 const { userId } = req.body;
 
-                const newOrder = await OrderService.createOrder(table.id, userId);
+                const newOrder = await OrderService.createOrder(tableId, userId);
 
                 /// Fanout Exchange
                 await RabbitMQService.publishOnOrderCreated(newOrder.toJSON()).catch(err => {
@@ -141,31 +139,10 @@ module.exports = {
                     data: { order: newOrder }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
-
-    /** Expected Input
-    * 
-    * { status, fromDate, toDate } = req.body;
-    * 
-    */
-    async getOrdersByUser(req, res, next) {
-        try {
-            const { userId } = req.params;
-            const { status, fromDate, toDate } = req.body;
-
-            const orders = await OrderService.getOrdersByUser(userId, status, fromDate, toDate);
-            res.status(200).json({
-                success: true,
-                message: 'Get orders successfully!',
-                data: { orders }
-            });
-        } catch (error) {
-            next(error);
-        }
-    },
 
     /** Expected Input
      * 
@@ -174,15 +151,16 @@ module.exports = {
      * 
      */
     changeTable: [
-        inputChecker.checkOrderInProgress,
-        inputChecker.checkTable,
+        inputChecker.checkBodyTable,
+        inputChecker.checkTableExist,
+        inputChecker.checkTableIsFree,
         async (req, res, next) => {
             try {
-                // get current order info
+                // get info of current order
                 const orderId = req.order.id;
                 const oldTableId = req.order.tableId;
 
-                // get new table need to change info
+                // get info of new table need to change
                 const newTableId = req.table.id;
 
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId: newTableId });
@@ -198,7 +176,7 @@ module.exports = {
                     data: { order: updatedOrder }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -214,7 +192,7 @@ module.exports = {
             try {
                 const order = req.order;
 
-                const updatedOrder = await OrderService.updateOrder({ id: order.id, status: 'cancelled' });
+                const updatedOrder = await OrderService.updateOrder({ id: order.id, status: 'cancelled', active: false });
 
                 const dataToSend = { open: order.tableId, close: null };
                 await RabbitMQService.publishOnOpenCloseTable(dataToSend).catch(err => {
@@ -227,7 +205,7 @@ module.exports = {
                     data: { order: updatedOrder }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -274,7 +252,7 @@ module.exports = {
                 });
             } catch (error) {
                 console.log(error.message);
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -315,7 +293,7 @@ module.exports = {
                     data: { order: updatedOrder }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -342,7 +320,7 @@ module.exports = {
                     data: { orderItem }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -375,7 +353,7 @@ module.exports = {
                     data: { orderItem: updatedOrderItem }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -385,43 +363,52 @@ module.exports = {
      * orderId = req.params
      * 
      */
-    async getOrders(req, res, next) {
+    async getOrder(req, res, next) {
         try {
             const { orderId } = req.params;
-            let orders;
 
-            if (orderId) {
-                orders = await OrderService.getOrderById(orderId);
-                if (!orders) return next(createError(404, 'Order not found'));
-            } else {
-                orders = await OrderService.getAllOrders();
-            }
+            const order = await OrderService.getOrderById(orderId);
+            if (!order) return next(createError(404, 'Order not found'));
 
             res.status(200).json({
                 success: true,
-                message: 'Get orders successfully!',
+                message: 'Get order successfully!',
+                data: { order }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    async getAllOrders(req, res, next) {
+        try {
+            const orders = await OrderService.getAllOrders();
+
+            res.status(200).json({
+                success: true,
+                message: 'Get all orders successfully!',
                 data: { orders }
             });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
     /** Expected Input
      * 
      * orderId = req.params
-     * { totalQuantity, subAmount, status, tableId } = req.body
+     * { status, active, tableId } = req.body
      * 
      */
     updateOrder: [
         inputChecker.checkBodyUpdateOrder,
-        inputChecker.checkTable,
+        inputChecker.checkTableExist,
         async (req, res, next) => {
             try {
                 const { orderId } = req.params;
-                const { totalQuantity, subAmount, status, tableId } = req.body;
+                const { status, active, tableId } = req.body;
 
-                const updatedOrder = await OrderService.updateOrder({ id: orderId, totalQuantity, subAmount, status, tableId });
+                const updatedOrder = await OrderService.updateOrder({ id: orderId, status, active, tableId });
                 if (!updatedOrder) return next(createError(404, 'Order not found'));
 
                 res.status(200).json({
@@ -430,7 +417,7 @@ module.exports = {
                     data: { order: updatedOrder }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
@@ -453,7 +440,7 @@ module.exports = {
                 data: { order: deletedOrder }
             });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     }
 };

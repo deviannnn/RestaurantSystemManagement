@@ -7,6 +7,7 @@ module.exports = {
       {
         tableId: 1,
         userId: 1,
+        active: false,
         status: 'in_progress',
         createdAt: new Date(),
         updatedAt: new Date()
@@ -14,6 +15,7 @@ module.exports = {
       {
         tableId: 2,
         userId: 2,
+        active: true,
         status: 'finished',
         createdAt: new Date(),
         updatedAt: new Date()
@@ -21,6 +23,7 @@ module.exports = {
       {
         tableId: 3,
         userId: 3,
+        active: false,
         status: 'in_progress',
         createdAt: new Date(),
         updatedAt: new Date()

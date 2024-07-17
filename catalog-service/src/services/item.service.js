@@ -4,35 +4,35 @@ const { Item } = require('../models');
 module.exports = {
     async createItem(name, price, image, description, available, active, categoryId) {
         try {
-            return Item.create({ name, price, image, description, available, active, categoryId })
-                .then((newItem) => newItem.get({ plain: true }));
+            const newItem = await Item.create({ name, price, image, description, available, active, categoryId });
+            return newItem;
         } catch (error) {
-            console.error('Error create item:', error);
+            console.error('Error creating item:', error);
             throw error;
         }
     },
 
     async getItemById(id) {
         try {
-            return Item.findByPk(id);
+            return await Item.findByPk(id);
         } catch (error) {
-            console.error('Error get item by ID:', error);
+            console.error('Error getting item by ID:', error);
             throw error;
         }
     },
 
     async getAllItems() {
         try {
-            return Item.findAll();
+            return await Item.findAll();
         } catch (error) {
-            console.error('Error get all items:', error);
+            console.error('Error getting all items:', error);
             throw error;
         }
     },
 
     async searchItemByName(qName) {
         try {
-            return Item.findAll({
+            return await Item.findAll({
                 where: {
                     name: {
                         [Op.like]: `%${qName}%`,
@@ -40,7 +40,34 @@ module.exports = {
                 },
             });
         } catch (error) {
-            console.error('Error search item by name:', error);
+            console.error('Error searching item by name:', error);
+            throw error;
+        }
+    },
+
+    async updateItem({ id, name, price, image, description, available, active, categoryId }) {
+        try {
+            const [updated] = await Item.update({ name, price, image, description, available, active, categoryId }, { where: { id } });
+            if (updated) {
+                return Item.findByPk(id);
+            }
+            return null;
+        } catch (error) {
+            console.error('Error updating item:', error);
+            throw error;
+        }
+    },
+
+    async deleteItem(id) {
+        try {
+            const item = await Item.findByPk(id);
+            if (item) {
+                await Item.destroy({ where: { id } });
+                return item;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error deleting item:', error);
             throw error;
         }
     },
@@ -49,9 +76,7 @@ module.exports = {
         try {
             // Lấy tất cả các mục với id trong itemIds
             const allItems = await Item.findAll({
-                where: {
-                    id: itemIds
-                },
+                where: { id: itemIds },
                 attributes: ['id', 'name', 'price', 'available', 'active']
             });
 
@@ -83,33 +108,7 @@ module.exports = {
                 invalidItems
             };
         } catch (error) {
-            throw new Error(`Error fetching items: ${error.message}`);
-        }
-    },
-
-    async updateItem({ id, name, price, image, description, available, active, categoryId }) {
-        try {
-            const [updated] = await Item.update({ name, price, image, description, available, active, categoryId }, { where: { id } });
-            if (updated) {
-                return Item.findByPk(id);
-            }
-            return null;
-        } catch (error) {
-            console.error('Error update item:', error);
-            throw error;
-        }
-    },
-
-    async deleteItem(id) {
-        try {
-            const item = await Item.findByPk(id);
-            if (item) {
-                await Item.destroy({ where: { id } });
-                return item;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error delete item:', error);
+            console.error('Error getting items by list Ids:', error);
             throw error;
         }
     }

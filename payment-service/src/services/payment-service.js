@@ -8,7 +8,7 @@ module.exports = {
     async createPayment(userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note) {
         try {
             const newPayment = await Payment.create({ userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note });
-            return newPayment.get({ plain: true });
+            return newPayment;
         } catch (error) {
             console.error('Error creating payment:', error);
             throw error;
@@ -36,7 +36,7 @@ module.exports = {
         }
     },
 
-    async updatePayment(id, subAmount, totalSurcharge, totalDiscount, totalAmount, note) {
+    async updatePayment({ id, subAmount, totalSurcharge, totalDiscount, totalAmount, note }) {
         try {
             const [updated] = await Payment.update(
                 { subAmount, totalSurcharge, totalDiscount, totalAmount, note },

@@ -1,17 +1,64 @@
+const axios = require('axios');
+const createError = require('http-errors');
+const inputChecker = require('../middlewares/input-checker');
+
 const PaymentService = require('../services/payment-service');
+const PaymentSurchargeService = require('../services/payment-surcharge-service');
+const SurchargeService = require('../services/surcharge-service');
+
+function calculateSurchargeAmounts(surcharges, subAmount) {
+    const { totalSurcharge, paymentSurcharges } = surcharges.reduce((acc, { id, isPercent, value }) => {
+        const surchargeValue = isPercent ? (value / 100) : value;
+        const amount = isPercent ? (subAmount * surchargeValue) : surchargeValue;
+        acc.totalSurcharge += amount;
+        acc.paymentSurcharges.push({
+            surchargeId: id,
+            value: surchargeValue,
+            amount
+        });
+        return acc;
+    }, { totalSurcharge: 0, paymentSurcharges: [] });
+
+    return { totalSurcharge, paymentSurcharges };
+}
 
 module.exports = {
-    async createPayment(req, res) {
-        try {
-            const { userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note } = req.body;
-            const newPayment = await PaymentService.createPayment(userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note);
-            res.status(201).json(newPayment);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    },
+    /** Expected Input
+    * 
+    * { userId, orderId, surchargeIds, totalDiscount, note } = req.body;
+    * surchargeIds list of surcharge_id
+    * 
+    */
+    createPayment: [
+        inputChecker.checkBodyOrder,
+        inputChecker.checkOrderExist,
+        inputChecker.checkOrderInProgress,
+        inputChecker.checkBodyCreatePayment,
+        async (req, res, next) => {
+            try {
+                const { userId, orderId, totalDiscount = 0, note } = req.body;
+                const subAmount = req.order.subAmount;
+                const surcharges = req.surcharges;
 
-    async getPayments(req, res) {
+                const { totalSurcharge, paymentSurcharges } = calculateSurchargeAmounts(surcharges, subAmount);
+
+                const totalAmount = subAmount + totalSurcharge - totalDiscount;
+
+                const payment = await PaymentService.createPayment(userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note);
+
+                const paymentSurchargePromises = paymentSurcharges.map(ps =>
+                    PaymentSurchargeService.createPaymentSurcharge(payment.id, ps.surchargeId, ps.value, ps.amount)
+                );
+                await Promise.all(paymentSurchargePromises);
+
+                res.status(201).json({ success: true, message: 'Payment created successfully', data: { payment, paymentSurcharges } });
+            } catch (error) {
+                next(error);
+            }
+        }
+    ],
+
+    async getPayments(req, res, next) {
         try {
             const { id } = req.params;
             if (id) {
@@ -30,7 +77,7 @@ module.exports = {
         }
     },
 
-    async updatePayment(req, res) {
+    async updatePayment(req, res, next) {
         try {
             const { id } = req.params;
             const { subAmount, totalSurcharge, totalDiscount, totalAmount, note } = req.body;
@@ -45,7 +92,7 @@ module.exports = {
         }
     },
 
-    async deletePayment(req, res) {
+    async deletePayment(req, res, next) {
         try {
             const { id } = req.params;
             const deletedPayment = await PaymentService.deletePayment(id);

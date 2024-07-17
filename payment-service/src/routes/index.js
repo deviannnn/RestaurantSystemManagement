@@ -4,12 +4,12 @@ const router = express.Router();
 const PaymentController = require('../controllers/payment-controller');
 const PaymentSurchargeController = require('../controllers/payment-surcharge-controller');
 
-router.post('/v1/payments', PaymentController.createPayment);
-router.get('/v1/payments/:id?', PaymentController.getPayments);
-router.put('/v1/payments/:id', PaymentController.updatePayment);
-router.delete('/v1/payments/:id', PaymentController.deletePayment);
+router.post('/payments', PaymentController.createPayment);
+router.get('/payments/:id?', PaymentController.getPayments);
+router.put('/payments/:id', PaymentController.updatePayment);
+router.delete('/payments/:id', PaymentController.deletePayment);
 
-router.get('/v1/payments-surcharges/:id?', PaymentSurchargeController.getAllPaymentSurcharges);
+router.get('/payments-surcharges/:id?', PaymentSurchargeController.getAllPaymentSurcharges);
 
 // Sử dụng các router khác...
 
