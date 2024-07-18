@@ -36,7 +36,7 @@ module.exports = {
         }
     },
 
-    async updatePaymentSurcharge({id, paymentId, surchargeId, value, amount}) {
+    async updatePaymentSurcharge({ id, paymentId, surchargeId, value, amount }) {
         try {
             const [updated] = await PaymentSurcharge.update({ paymentId, surchargeId, value, amount }, { where: { id } });
             if (updated) {

@@ -75,11 +75,11 @@ module.exports = {
 
             // Phân loại các mục hợp lệ và không hợp lệ
             allSurcharges.forEach(surcharge => {
-                const surchargeData = { id: surcharge.id };
+                const surchargeData = { id: surcharge.id, name: surcharge.name };
                 if (surcharge.active) {
                     validSurcharges.push({ ...surchargeData, isPercent: surcharge.isPercent, value: surcharge.value });
                 } else {
-                    invalidSurcharges.push({ ...surchargeData, name: surcharge.name, detail: 'Unavailable' });
+                    invalidSurcharges.push({ ...surchargeData, detail: 'Unavailable' });
                 }
             });
 

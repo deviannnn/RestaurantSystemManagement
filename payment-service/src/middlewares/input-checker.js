@@ -38,10 +38,15 @@ module.exports = {
         }
     },
 
-    // { orderId, surchargeIds, totalDiscount, note } = req.body;
+    // { totalDiscount, note } = req.body;
     checkBodyCreatePayment: [
         check('totalDiscount').optional().notEmpty().isFloat({ min: 0 }).withMessage('Payment TotalDiscount must be a real number > 0'),
         check('note').optional().isString().withMessage('Payment Note must be a string'),
+        validator
+    ],
+    
+    // { surchargeIds } = req.body;
+    checkBodySurchargeIds: [
         check('surchargeIds').isArray({ min: 1 }).withMessage('Payment SurchargeIds must be a non-empty array'),
         validator,
         async (req, res, next) => {
@@ -59,6 +64,5 @@ module.exports = {
                 return next(error);
             }
         }
-    ],
-
+    ]
 };

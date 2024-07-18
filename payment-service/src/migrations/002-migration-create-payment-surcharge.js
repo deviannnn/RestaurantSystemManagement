@@ -17,7 +17,8 @@ module.exports = {
                     model: 'Payments',
                     key: 'id'
                 },
-                onUpdate: 'CASCADE'
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE'
             },
             surchargeId: {
                 allowNull: false,

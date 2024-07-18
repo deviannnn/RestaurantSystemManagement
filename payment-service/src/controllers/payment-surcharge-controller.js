@@ -1,65 +1,99 @@
-const PaymentSurchargeService = require('../services/payment-surcharge-service');
+const createError = require('http-errors');
+
+const { PaymentSurchargeService } = require('../services');
 
 module.exports = {
+    /** Expected Input
+     * 
+     * { paymentId, surchargeId, value, amount } = req.body
+     * 
+     */
     async createPaymentSurcharge(req, res) {
         try {
             const { paymentId, surchargeId, value, amount } = req.body;
             const newPaymentSurcharge = await PaymentSurchargeService.createPaymentSurcharge(paymentId, surchargeId, value, amount);
-            res.status(201).json(newPaymentSurcharge);
+            res.status(201).json({
+                success: true,
+                message: 'Create paymentSurcharge successfully!',
+                data: { paymentSurcharge: newPaymentSurcharge }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
-    async getPaymentSurchargeById(req, res) {
+    /** Expected Input
+     * 
+     * psId ? = req.params
+     * 
+     */
+    async getPaymentSurcharges(req, res) {
         try {
-            const { id } = req.params;
-            const paymentSurcharge = await PaymentSurchargeService.getPaymentSurchargeById(id);
-            if (paymentSurcharge) {
-                res.status(200).json(paymentSurcharge);
+            const { psId } = req.params;
+            if (psId) {
+                const paymentSurcharge = await PaymentSurchargeService.getPaymentSurchargeById(psId);
+                if (!paymentSurcharge) return next(createError(404, 'PaymentSurcharge not found'));
+                res.status(200).json({
+                    success: true,
+                    message: 'Get paymentSurcharge successfully!',
+                    data: { paymentSurcharge }
+                });
             } else {
-                res.status(404).json({ error: 'Payment surcharge not found' });
+                const paymentSurcharges = await PaymentSurchargeService.getAllPaymentSurcharges();
+                res.status(200).json({
+                    success: true,
+                    message: 'Get all paymentSurcharges successfully!',
+                    data: { paymentSurcharges }
+                });
             }
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
-    async getAllPaymentSurcharges(req, res) {
-        try {
-            const paymentSurcharges = await PaymentSurchargeService.getAllPaymentSurcharges();
-            res.status(200).json(paymentSurcharges);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    },
-
+    /** Expected Input
+     * 
+     * psId = req.params
+     * { paymentId, surchargeId, value, amount } = req.body
+     * 
+     */
     async updatePaymentSurcharge(req, res) {
         try {
-            const { id } = req.params;
+            const { psId } = req.params;
             const { paymentId, surchargeId, value, amount } = req.body;
-            const updatedPaymentSurcharge = await PaymentSurchargeService.updatePaymentSurcharge(id, paymentId, surchargeId, value, amount);
-            if (updatedPaymentSurcharge) {
-                res.status(200).json(updatedPaymentSurcharge);
-            } else {
-                res.status(404).json({ error: 'Payment surcharge not found' });
-            }
+
+            const updatedPS = await PaymentSurchargeService.updatePaymentSurcharge({ id: psId, paymentId, surchargeId, value, amount });
+            if (!updatedPS) return next(createError(404, 'PaymentSurcharge not found'));
+
+            res.status(200).json({
+                sucess: true,
+                message: 'Update paymentSurcharge successfully!',
+                data: { paymentSurcharge: updatedPS }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
+    /** Expected Input
+     * 
+     * psId = req.params
+     * 
+     */
     async deletePaymentSurcharge(req, res) {
         try {
-            const { id } = req.params;
-            const deletedPaymentSurcharge = await PaymentSurchargeService.deletePaymentSurcharge(id);
-            if (deletedPaymentSurcharge) {
-                res.status(200).json(deletedPaymentSurcharge);
-            } else {
-                res.status(404).json({ error: 'Payment surcharge not found' });
-            }
+            const { psId } = req.params;
+
+            const deletedPS = await PaymentSurchargeService.deletePaymentSurcharge(psId);
+            if (!deletedPS) return next(createError(404, 'PaymentSurcharge not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete paymentSurcharge successfully!',
+                data: { paymentSurcharge: deletedPS }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     }
 };

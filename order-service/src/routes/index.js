@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const OrderController = require('../controllers/order-controller');
-const OrderItemController = require('../controllers/order-item-controller');
+const { OrderController, OrderItemController } = require('../controllers');
 
 // Orders CRUD
 router.post('/orders', OrderController.createOrder);
@@ -20,9 +19,9 @@ router.put('/orders/:orderId/updated-items', OrderController.updateItemsToOrder)
 
 // OrdersItems CRUD
 router.post('/orders-items', OrderItemController.createOrderItem);
-router.get('/orders-items/:id?', OrderItemController.getOrderItems);
-router.put('/orders-items/:id', OrderItemController.updateOrderItem);
-router.delete('/orders-items/:id', OrderItemController.deleteOrderItem);
+router.get('/orders-items/:orderItemId?', OrderItemController.getOrderItems);
+router.put('/orders-items/:orderItemId', OrderItemController.updateOrderItem);
+router.delete('/orders-items/:orderItemId', OrderItemController.deleteOrderItem);
 
 // OrdersItems Business Logic
 router.post('/orders-items/:orderItemId/request-cancel', OrderController.requestCancelOrderItem);

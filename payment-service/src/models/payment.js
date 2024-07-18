@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Payment.hasMany(models.PaymentSurcharge, {
                 foreignKey: 'paymentId',
-                as: 'surcharge'
+                as: 'surcharges'
             });
         }
     }

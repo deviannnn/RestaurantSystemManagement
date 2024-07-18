@@ -13,7 +13,8 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             this.belongsTo(models.Payment, {
                 foreignKey: 'paymentId',
-                as: 'payment'
+                as: 'payment',
+                onDelete: 'CASCADE'
             });
 
             this.belongsTo(models.Surcharge, {

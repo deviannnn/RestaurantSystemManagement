@@ -1,65 +1,99 @@
-const SurchargeService = require('../services/surcharge-service');
+const createError = require('http-errors');
+
+const { SurchargeService } = require('../services');
 
 module.exports = {
+    /** Expected Input
+     * 
+     * { name, isPercent, value, description, active } = req.body
+     * 
+     */
     async createSurcharge(req, res) {
         try {
             const { name, isPercent, value, description, active } = req.body;
             const newSurcharge = await SurchargeService.createSurcharge(name, isPercent, value, description, active);
-            res.status(201).json(newSurcharge);
+            res.status(201).json({
+                success: true,
+                message: 'Create surcharge successfully!',
+                data: { surcharge: newSurcharge }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
-    async getSurchargeById(req, res) {
+    /** Expected Input
+     * 
+     * surchargeId ? = req.params
+     * 
+     */
+    async getSurcharges(req, res, next) {
         try {
-            const { id } = req.params;
-            const surcharge = await SurchargeService.getSurchargeById(id);
-            if (surcharge) {
-                res.status(200).json(surcharge);
+            const { surchargeId } = req.params;
+            if (surchargeId) {
+                const surcharge = await SurchargeService.getSurchargeById(surchargeId);
+                if (!surcharge) return next(createError(404, 'Surcharge not found'));
+                res.status(200).json({
+                    success: true,
+                    message: 'Get surcharge successfully!',
+                    data: { surcharge }
+                });
             } else {
-                res.status(404).json({ error: 'Surcharge not found' });
+                const surcharges = await SurchargeService.getAllSurcharges();
+                res.status(200).json({
+                    success: true,
+                    message: 'Get all surcharges successfully!',
+                    data: { surcharges }
+                });
             }
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
-    async getAllSurcharges(req, res) {
-        try {
-            const surcharges = await SurchargeService.getAllSurcharges();
-            res.status(200).json(surcharges);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    },
-
+    /** Expected Input
+     * 
+     * surchargeId = req.params
+     * { name, isPercent, value, description, active } = req.body
+     * 
+     */
     async updateSurcharge(req, res) {
         try {
-            const { id } = req.params;
+            const { surchargeId } = req.params;
             const { name, isPercent, value, description, active } = req.body;
-            const updatedSurcharge = await SurchargeService.updateSurcharge(id, name, isPercent, value, description, active);
-            if (updatedSurcharge) {
-                res.status(200).json(updatedSurcharge);
-            } else {
-                res.status(404).json({ error: 'Surcharge not found' });
-            }
+
+            const updatedSurcharge = await SurchargeService.updateSurcharge({ id: surchargeId, name, isPercent, value, description, active });
+            if (!updatedSurcharge) return next(createError(404, 'Surcharge not found'));
+
+            res.status(200).json({
+                sucess: true,
+                message: 'Update surcharge successfully!',
+                data: { surcharge: updatedSurcharge }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     },
 
+    /** Expected Input
+     * 
+     * surchargeId = req.params
+     * 
+     */
     async deleteSurcharge(req, res) {
         try {
-            const { id } = req.params;
-            const deletedSurcharge = await SurchargeService.deleteSurcharge(id);
-            if (deletedSurcharge) {
-                res.status(200).json(deletedSurcharge);
-            } else {
-                res.status(404).json({ error: 'Surcharge not found' });
-            }
+            const { surchargeId } = req.params;
+
+            const deletedSurcharge = await SurchargeService.deleteSurcharge(surchargeId);
+            if (!deletedSurcharge) return next(createError(404, 'Surcharge not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete surcharge successfully!',
+                data: { surcharge: deletedSurcharge }
+            });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            return next(error);
         }
     }
 };

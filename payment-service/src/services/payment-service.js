@@ -1,7 +1,7 @@
 const { Payment, PaymentSurcharge } = require('../models');
 
 const includeOptions = [
-    { model: PaymentSurcharge, as: 'surcharge' }
+    { model: PaymentSurcharge, as: 'surcharges' }
 ];
 
 module.exports = {

@@ -2,9 +2,7 @@ const axios = require('axios');
 const createError = require('http-errors');
 const inputChecker = require('../middlewares/input-checker');
 
-const OrderService = require('../services/order-service');
-const OrderItemService = require('../services/order-item-service');
-const RabbitMQService = require('../services/rabbitmq-service');
+const { OrderService, OrderItemService, RabbitMQService } = require('../services');
 
 // Function to handle add order items
 async function processAddOrderItems(orderId, itemDatas) {
@@ -147,10 +145,97 @@ module.exports = {
     /** Expected Input
      * 
      * orderId = req.params
+     * 
+     */
+    async getOrder(req, res, next) {
+        try {
+            const { orderId } = req.params;
+
+            const order = await OrderService.getOrderById(orderId);
+            if (!order) return next(createError(404, 'Order not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Get order successfully!',
+                data: { order }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    async getAllOrders(req, res, next) {
+        try {
+            const orders = await OrderService.getAllOrders();
+
+            res.status(200).json({
+                success: true,
+                message: 'Get all orders successfully!',
+                data: { orders }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * orderId = req.params
+     * { status, active, tableId } = req.body
+     * 
+     */
+    updateOrder: [
+        inputChecker.checkBodyUpdateOrder,
+        inputChecker.checkTableExist,
+        async (req, res, next) => {
+            try {
+                const { orderId } = req.params;
+                const { status, active, tableId } = req.body;
+
+                const updatedOrder = await OrderService.updateOrder({ id: orderId, status, active, tableId });
+                if (!updatedOrder) return next(createError(404, 'Order not found'));
+
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Update order successfully!',
+                    data: { order: updatedOrder }
+                });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    ],
+
+    /** Expected Input
+     * 
+     * orderId = req.params
+     * 
+     */
+    async deleteOrder(req, res, next) {
+        try {
+            const { orderId } = req.params;
+
+            const deletedOrder = await OrderService.deleteOrder(orderId);
+            if (!deletedOrder) return next(createError(404, 'Order not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete order successfully!',
+                data: { order: deletedOrder }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * orderId = req.params
      * tableId = req.body;
      * 
      */
     changeTable: [
+        inputChecker.checkOrderInProgress,
         inputChecker.checkBodyTable,
         inputChecker.checkTableExist,
         inputChecker.checkTableIsFree,
@@ -357,90 +442,4 @@ module.exports = {
             }
         }
     ],
-
-    /** Expected Input
-     * 
-     * orderId = req.params
-     * 
-     */
-    async getOrder(req, res, next) {
-        try {
-            const { orderId } = req.params;
-
-            const order = await OrderService.getOrderById(orderId);
-            if (!order) return next(createError(404, 'Order not found'));
-
-            res.status(200).json({
-                success: true,
-                message: 'Get order successfully!',
-                data: { order }
-            });
-        } catch (error) {
-            return next(error);
-        }
-    },
-
-    async getAllOrders(req, res, next) {
-        try {
-            const orders = await OrderService.getAllOrders();
-
-            res.status(200).json({
-                success: true,
-                message: 'Get all orders successfully!',
-                data: { orders }
-            });
-        } catch (error) {
-            return next(error);
-        }
-    },
-
-    /** Expected Input
-     * 
-     * orderId = req.params
-     * { status, active, tableId } = req.body
-     * 
-     */
-    updateOrder: [
-        inputChecker.checkBodyUpdateOrder,
-        inputChecker.checkTableExist,
-        async (req, res, next) => {
-            try {
-                const { orderId } = req.params;
-                const { status, active, tableId } = req.body;
-
-                const updatedOrder = await OrderService.updateOrder({ id: orderId, status, active, tableId });
-                if (!updatedOrder) return next(createError(404, 'Order not found'));
-
-                res.status(200).json({
-                    sucess: true,
-                    message: 'Update order successfully!',
-                    data: { order: updatedOrder }
-                });
-            } catch (error) {
-                return next(error);
-            }
-        }
-    ],
-
-    /** Expected Input
-     * 
-     * orderId = req.params
-     * 
-     */
-    async deleteOrder(req, res, next) {
-        try {
-            const { orderId } = req.params;
-
-            const deletedOrder = await OrderService.deleteOrder(orderId);
-            if (!deletedOrder) return next(createError(404, 'Order not found'));
-
-            res.status(200).json({
-                success: true,
-                message: 'Delete order successfully!',
-                data: { order: deletedOrder }
-            });
-        } catch (error) {
-            return next(error);
-        }
-    }
 };
