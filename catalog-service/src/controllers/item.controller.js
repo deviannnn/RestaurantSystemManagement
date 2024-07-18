@@ -4,7 +4,7 @@ const inputChecker = require('../middlewares/input-checker');
 const ItemService = require('../services/item.service');
 const CategoryService = require('../services/category.service');
 const upload = require('../middlewares/upload');
-const connectRedis = require('../config/redis');
+const Redis = require('../services/redis-service');
 const { validationResult, check } = require('express-validator');
 
 const validator = (req, res, next) => {
@@ -56,17 +56,18 @@ module.exports = {
         try {
             const { id } = req.params;
             const { available } = req.body;
-            const client = await connectRedis();
-
+            
             const toggledItem = await ItemService.updateItem({ id, available });
             if (toggledItem) {
-                client.flushAll();
 
-                const allItems = await ItemService.getAllItems();
-                await client.set(`items`, JSON.stringify(allItems), 'EX', 50);
+                await Redis.delItemsToRedis('allItemsClient');
 
-                const allItemsClient = await ItemService.getAllItemsForClient();
-                await client.set(`allItemsClient`, JSON.stringify(allItemsClient), 'EX', 50);
+                const allItemsClient = await CategoryService.getAllCategories(true);
+                await Redis.saveItemsForClient({
+                    key: 'allItemsClient',
+                    value: JSON.stringify(allItemsClient),
+                    expireTimeInSeconds: 50
+                });
 
                 return res.status(200).json({
                     sucess: true,
@@ -123,9 +124,8 @@ module.exports = {
                     data: { find }
                 });
             } else {
-                const client = await connectRedis();
+                const allItemsClient = await Redis.getItemsToRedis('allItemsClient');
 
-                const allItemsClient = await client.get('allItemsClient');
                 if (allItemsClient) {
                     return res.status(300).json({
                         sucess: true,
@@ -135,7 +135,13 @@ module.exports = {
                 }
 
                 const item = await CategoryService.getAllCategories(true);
-                await client.set('allItemsClient', JSON.stringify(item), 'EX', 50);
+
+                await Redis.saveItemsForClient({
+                    key: 'allItemsClient',
+                    value: JSON.stringify(item),
+                    expireTimeInSeconds: 10
+                });
+                
                 return res.status(200).json({
                     sucess: true,
                     message: 'Get all items for client successfully!',

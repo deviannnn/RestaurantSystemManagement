@@ -27,7 +27,7 @@ const generateJWT = async (account, source) => {
         //     expiresIn = '5m';
         // }
         if (source === 'login') {
-            expiresIn = '30s';
+            expiresIn = '5m';
         }
 
         const token = await jwt.sign(

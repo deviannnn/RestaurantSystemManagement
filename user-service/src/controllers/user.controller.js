@@ -1,5 +1,6 @@
 const UserService = require('../services/user.service');
 const RabbitMQ = require('../services/rabbitmq-service');
+const Redis = require('../services/redis-service');
 const { generateJWT, generateRefreshToken, decodeToken, extractToken, revokedTokens } = require('../utils/jwt');
 const { validationResult, check } = require('express-validator');
 
@@ -141,29 +142,16 @@ module.exports = {
 
     async logout(req, res, next) {
         try {
-            const token = await extractToken(req);
-
-            if (!token) {
-                return res.status(400).json({ 
-                    success: false,
-                    message: 'Token missing',
-                    data: {}
-                });
-            }
-
-            let decodedToken;
-            try {
-                decodedToken = await decodeToken(token);
-            } catch (err) {
-                return res.status(400).json({ 
-                    success: false,
-                    message: 'Invalid token',
-                    data: {}
-                });
-            }
-            const userId = decodedToken.id;
+            const userId = req.user.id;
+            const token = extractToken(req);
+            
             await UserService.deleteUserRefreshToken(userId);
-            await revokedTokens.add(token);
+
+            Redis.saveTokenRevoked({
+                key: `${token}`,
+                value: 1,
+                expireTimeInSeconds: 15
+            });
 
             return res.status(200).json({ 
                 success: true,
@@ -283,6 +271,7 @@ module.exports = {
                 });
             }
 
+            //Add token in blacklist
             await revokedTokens.add(user.refreshToken);
 
             const accessTokenNew = await generateJWT(user, 'login');

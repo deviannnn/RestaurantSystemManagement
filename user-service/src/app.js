@@ -8,7 +8,7 @@ const logger = require('morgan');
 const convertTimezone = require('./middlewares/timezone');
 const connectDB = require('./config/connectDB');
 const RabbitMQ = require('./config/rabbitmq');
-
+const Redis = require('./config/redis');
 connectDB(); //Test Database connection
 
 const startRabbitMQ = async () => {
@@ -19,8 +19,17 @@ const startRabbitMQ = async () => {
         console.error('Failed to start RabbitMQ:', error);
     }
 };
+const startRedis = async () => {
+    try {
+        await Redis.connect();
+        console.log('Redis is connected');
+    } catch (error) {
+        console.error('Failed to start Redis:', error);
+    }
+};
 
 startRabbitMQ();
+startRedis();
 
 const app = express();
 
