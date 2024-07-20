@@ -1,10 +1,9 @@
 const createError = require('http-errors');
 const inputChecker = require('../middlewares/input-checker');
 
-const ItemService = require('../services/item.service');
-const CategoryService = require('../services/category.service');
+const { ItemService, CategoryService, RedisService } = require('../services');
+
 const upload = require('../middlewares/upload');
-const Redis = require('../services/redis-service');
 const { validationResult, check } = require('express-validator');
 
 const validator = (req, res, next) => {
@@ -56,14 +55,14 @@ module.exports = {
         try {
             const { id } = req.params;
             const { available } = req.body;
-            
+
             const toggledItem = await ItemService.updateItem({ id, available });
             if (toggledItem) {
 
-                await Redis.delItemsToRedis('allItemsClient');
+                await RedisService.delItemsToRedis('allItemsClient');
 
                 const allItemsClient = await CategoryService.getAllCategories(true);
-                await Redis.saveItemsForClient({
+                await RedisService.saveItemsForClient({
                     key: 'allItemsClient',
                     value: JSON.stringify(allItemsClient),
                     expireTimeInSeconds: 50
@@ -124,7 +123,7 @@ module.exports = {
                     data: { find }
                 });
             } else {
-                const allItemsClient = await Redis.getItemsToRedis('allItemsClient');
+                const allItemsClient = await RedisService.getItemsToRedis('allItemsClient');
 
                 if (allItemsClient) {
                     return res.status(300).json({
@@ -136,12 +135,12 @@ module.exports = {
 
                 const item = await CategoryService.getAllCategories(true);
 
-                await Redis.saveItemsForClient({
+                await RedisService.saveItemsForClient({
                     key: 'allItemsClient',
                     value: JSON.stringify(item),
                     expireTimeInSeconds: 10
                 });
-                
+
                 return res.status(200).json({
                     sucess: true,
                     message: 'Get all items for client successfully!',

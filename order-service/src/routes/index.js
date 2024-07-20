@@ -2,13 +2,15 @@ const express = require('express');
 const router = express.Router();
 
 const { OrderController, OrderItemController } = require('../controllers');
+const { authorize } = require('../middlewares/auth');
+
 
 // Orders CRUD
-router.post('/orders', OrderController.createOrder);
-router.get('/orders', OrderController.getAllOrders);
-router.get('/orders/:orderId', OrderController.getOrder);
-router.put('/orders/:orderId', OrderController.updateOrder);
-router.delete('/orders/:orderId', OrderController.deleteOrder);
+router.post('/orders', authorize(["manager", "staff"]), OrderController.createOrder);
+router.get('/orders', authorize(["manager", "staff"]), OrderController.getAllOrders);
+router.get('/orders/:orderId', authorize(["manager", "staff"]), OrderController.getOrder);
+router.put('/orders/:orderId', authorize(["admin", "manager"]), OrderController.updateOrder);
+router.delete('/orders/:orderId', authorize(["admin"]), OrderController.deleteOrder);
 
 // Orders Business Logic
 router.put('/orders/:orderId/change-table', OrderController.changeTable);

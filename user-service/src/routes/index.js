@@ -6,40 +6,27 @@ const UserController = require('../controllers/user.controller');
 
 const auth = require('../middlewares/auth');
 
-router.get('/v1/users/active', UserController.verifyAccount);
-router.post('/v1/users/register', UserController.register);
+router.get('/auth/active', UserController.verifyAccount);
+router.post('/auth/login', UserController.login);
 
-// router.use(auth.checkRevokedToken);
-
-router.post('/v1/users/login', UserController.login);
-
-router.use(auth.checkRevokedToken);
-router.use(auth.authenticate);
-
-// router.use(auth.isManager);
-// router.use(auth.isCashier);
-router.post('/v1/users/refresh-token', UserController.refreshToken);
-
-router.post('/v1/users/resetpassword', UserController.resetPassword);
-
-router.post('/v1/users/:id/changepassword', UserController.changePassword);
-
-router.post('/v1/users/logout', UserController.logout);
-
-// router.use(auth.isAdmin);
-router.post('/v1/users/resend-mail-active', UserController.resendMailActive);
 
 //CRUD users
-router.post('/v1/users/register', UserController.register);
-router.get('/v1/users/:id?', UserController.getUser);
-router.put('/v1/users/:id', UserController.updateUser);
-router.delete('/v1/users/:id', UserController.deleteUser);
+router.post('/users/register', UserController.register);
+router.get('/users/:id?', UserController.getUser);
+router.put('/users/:id', UserController.updateUser);
+router.delete('/users/:id', UserController.deleteUser);
+
+router.post('/users/register', UserController.register);
+router.post('/users/refresh-token', UserController.refreshToken);
+router.post('/users/resetpassword', UserController.resetPassword);
+router.post('/users/:id/changepassword', UserController.changePassword);
+router.post('/users/logout', UserController.logout);
+router.post('/users/resend-mail-active', UserController.resendMailActive);
 
 //CRUD role
-router.post('/v1/role', RoleController.createRole);
-router.get('/v1/role/:id?', RoleController.getRoles);
-router.put('/v1/role/:id', RoleController.updateRole);
-router.delete('/v1/role/:id', RoleController.deleteRole);
-// Sử dụng các router khác...
+router.post('/roles', RoleController.createRole);
+router.get('/roles/:id?', RoleController.getRoles);
+router.put('/roles/:id', RoleController.updateRole);
+router.delete('/roles/:id', RoleController.deleteRole);
 
 module.exports = router;

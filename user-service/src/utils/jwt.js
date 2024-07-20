@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET;
 const secretKeyRefreshToken = process.env.JWT_SECRET_REFRESHTOKEN;
-const revokedTokens = new Set();
 
 const generateActiveToken = (userID) => {
     try {
@@ -19,26 +18,14 @@ const generateActiveToken = (userID) => {
     }
 };
 
-const generateJWT = async (account, source) => {
+const generateAccessToken = async (user) => {
     try {
-        let expiresIn = '3m';
-
-        // if (source === 'password_change') {
-        //     expiresIn = '5m';
-        // }
-        if (source === 'login') {
-            expiresIn = '5m';
-        }
-
+        const expiresIn = '5m';
         const token = await jwt.sign(
             {
-                id: account.id,
-                roleId: account.roleId,
-                email: account.email,
-                fullName: account.fullName,
-                phone: account.phone,
-                active: account.active,
-                source: source
+                id: user.id,
+                roleId: user.roleId,
+                fullName: user.fullName
             },
             secretKey,
             {
@@ -53,19 +40,14 @@ const generateJWT = async (account, source) => {
     }
 };
 
-const generateRefreshToken = async (account, source) => {
+const generateRefreshToken = async (user) => {
     try {
-        let expiresIn = '30d'
+        let expiresIn = '7d'
 
         const token = await jwt.sign(
             {
-                id: account.id,
-                roleId: account.roleId,
-                email: account.email,
-                fullName: account.fullName,
-                phone: account.phone,
-                active: account.active,
-                source: source
+                id: user.id,
+                roleId: user.roleId
             },
             secretKeyRefreshToken,
             {
@@ -100,4 +82,4 @@ const decodeToken = async (token) => {
     }
 };
 
-module.exports = { generateActiveToken, generateJWT, generateRefreshToken, extractToken, decodeToken, revokedTokens};
+module.exports = { generateActiveToken, generateAccessToken, generateRefreshToken, extractToken, decodeToken };

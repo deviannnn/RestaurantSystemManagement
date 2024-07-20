@@ -1,14 +1,15 @@
 {
-  "name": "restaurant-system-api-gateway",
+  "name": "restaurant-system_api-gateway",
   "version": "0.0.0",
   "private": true,
   "description": "",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node ./src/app.js",
+    "dev": "nodemon ./src/app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "~4.19.2",
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.1.0",

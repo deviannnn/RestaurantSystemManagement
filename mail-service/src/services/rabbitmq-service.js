@@ -1,5 +1,5 @@
 const RabbitMQ = require('../config/rabbitmq');
-const MailService = require('../services/mail.service')
+const MailService = require('./mail.service')
 
 module.exports = {
     async subEmail() {

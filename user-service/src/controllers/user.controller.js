@@ -1,7 +1,7 @@
 const UserService = require('../services/user.service');
 const RabbitMQ = require('../services/rabbitmq-service');
 const Redis = require('../services/redis-service');
-const { generateJWT, generateRefreshToken, decodeToken, extractToken, revokedTokens } = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken, decodeToken, extractToken, revokedTokens } = require('../utils/jwt');
 const { validationResult, check } = require('express-validator');
 
 const jwt = require('../utils/jwt');
@@ -20,7 +20,7 @@ function validate(req, res, next) {
 }
 
 module.exports = {
-    register : [
+    register: [
         check('fullName')
             .not().isEmpty().withMessage('Fullname cannot be empty.')
             .matches(/^[\p{L}\s]*$/u).withMessage('Fullname should only contain letters and spaces.'),
@@ -87,10 +87,10 @@ module.exports = {
                     RabbitMQ.pubEmail(JSON.stringify(mailContent));
 
                     return res.status(201).json({
-                            success: true,
-                            message: "Register successfull!",
-                            data: {user: {roleId, fullName, gender, nationalId, phone, email}}
-                        });
+                        success: true,
+                        message: "Register successfull!",
+                        data: { user: { roleId, fullName, gender, nationalId, phone, email } }
+                    });
                 }
             } catch (error) {
                 console.log(error.message);
@@ -107,33 +107,29 @@ module.exports = {
 
             const user = await UserService.getUserByEmail(userData.email)
             if (!user || !bcrypt.compareSync(userData.password, user.password)) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'Invalid username or password!',
                     data: {}
                 });
             }
             if (!user.active) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'Account has not been activated!',
                     data: {}
                 });
             }
 
-            const token = await generateJWT(user, 'login');
+            const accessToken = await generateAccessToken(user);
             const refreshToken = await generateRefreshToken(user);
 
             await UserService.updateUser({ id: user.id, refreshToken: refreshToken });
 
-            return res.status(200).json({ 
+            return res.status(200).json({
                 success: true,
-                message: 'Login successfull!',
-                data: {
-                    user,
-                    token: token,
-                    refreshToken: refreshToken
-                }
+                message: 'Login successfully!',
+                data: { user, accessToken, refreshToken }
             })
         } catch (error) {
             next(error);
@@ -144,7 +140,7 @@ module.exports = {
         try {
             const userId = req.user.id;
             const token = extractToken(req);
-            
+
             await UserService.deleteUserRefreshToken(userId);
 
             Redis.saveTokenRevoked({
@@ -153,7 +149,7 @@ module.exports = {
                 expireTimeInSeconds: 15
             });
 
-            return res.status(200).json({ 
+            return res.status(200).json({
                 success: true,
                 msg: 'Logout successfull!',
                 data: {}
@@ -168,9 +164,9 @@ module.exports = {
         try {
             const token = extractToken(req);
             if (!token) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
-                    message: 'Token is missing', 
+                    message: 'Token is missing',
                     data: {}
                 });
             }
@@ -179,7 +175,7 @@ module.exports = {
             try {
                 decodedToken = await decodeToken(token);
             } catch (err) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'Invalid token',
                     data: {}
@@ -189,7 +185,7 @@ module.exports = {
             const userId = decodedToken.id;
             const user = await UserService.getUserById(userId);
             if (!user) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'User not found!',
                     data: {}
@@ -198,7 +194,7 @@ module.exports = {
 
             await UserService.updateUser({ id: userId, active: true });
 
-            return res.status(200).json({ 
+            return res.status(200).json({
                 success: true,
                 message: 'Account verified successfully!',
                 data: {}
@@ -232,16 +228,16 @@ module.exports = {
                 }
 
                 await sendToQueue('send_email', JSON.stringify(mailContent));
-                return res.status(200).json({ 
+                return res.status(200).json({
                     success: true,
                     msg: 'Reset password successfull!',
                     data: {}
                 });
             }
             else {
-                res.status(404).json({ 
+                res.status(404).json({
                     success: false,
-                    error: 'Email not found!', 
+                    error: 'Email not found!',
                     data: {}
                 });
             }
@@ -255,16 +251,20 @@ module.exports = {
         try {
             const { refreshToken } = req.body;
             if (!refreshToken) {
-                return res.status(401).json({ 
+                return res.status(401).json({
                     success: false,
-                    message: 'Refresh token is required!', 
+                    message: 'Refresh token is required!',
                     data: {}
                 });
             }
 
+            // user = decode = decode(refreshToken)
+            // user.id 
+            // findById(user.id)
+            // 
             const user = await UserService.getUserByRefreshToken(refreshToken);
             if (!user) {
-                return res.status(401).json({ 
+                return res.status(401).json({
                     success: false,
                     message: 'Invalid refresh token!',
                     data: {}
@@ -274,7 +274,7 @@ module.exports = {
             //Add token in blacklist
             await revokedTokens.add(user.refreshToken);
 
-            const accessTokenNew = await generateJWT(user, 'login');
+            const accessTokenNew = await generateAccessToken(user, 'login');
             const refreshTokenNew = await generateRefreshToken(user);
 
             await UserService.updateUser({ id: user.id, refreshToken: refreshTokenNew });
@@ -282,7 +282,7 @@ module.exports = {
             return res.status(201).json({
                 success: true,
                 message: 'Refresh Token sucessfull!',
-                data: {accessTokenNew: accessTokenNew,refreshTokenNew: refreshTokenNew}
+                data: { accessTokenNew: accessTokenNew, refreshTokenNew: refreshTokenNew }
             });
         } catch (error) {
             next(error);
@@ -294,7 +294,7 @@ module.exports = {
             const { id } = req.body;
 
             if (!id) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'User ID is required!',
                     data: {}
@@ -304,7 +304,7 @@ module.exports = {
             const existingUser = await UserService.getUserById(id);
 
             if (!existingUser) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: 'User does not exist!',
                     data: {}
@@ -323,9 +323,9 @@ module.exports = {
                 link: link
             }
             await sendToQueue('send_email', JSON.stringify(mailContent));
-            return res.status(200).json({ 
+            return res.status(200).json({
                 success: true,
-                msg: 'Complete resend email active!', 
+                msg: 'Complete resend email active!',
                 data: {}
             });
 
@@ -340,9 +340,9 @@ module.exports = {
             const { newPassword, confirmnNewPassword } = req.body;
 
             if (newPassword != confirmnNewPassword) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
-                    message: 'Confirm password does not match!', 
+                    message: 'Confirm password does not match!',
                     data: {}
                 });
             }
@@ -353,16 +353,16 @@ module.exports = {
             const newPasswordHashed = await bcrypt.hash(newPassword, 10);
 
             if (!user) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
-                    message: 'User not found!', 
+                    message: 'User not found!',
                     data: {}
                 });
             }
             await UserService.updateUser({ id: user.id, password: newPasswordHashed });
-            res.status(200).json({ 
+            res.status(200).json({
                 success: true,
-                message: 'Change password successfull!', 
+                message: 'Change password successfull!',
                 data: {}
             });
         } catch (error) {
@@ -383,7 +383,7 @@ module.exports = {
                         data: user
                     });
                 } else {
-                    return res.status(404).json({ 
+                    return res.status(404).json({
                         success: false,
                         message: 'User not found!',
                         data: {}
@@ -394,7 +394,7 @@ module.exports = {
                 return res.status(200).json({
                     success: true,
                     message: 'Get all user successfull!',
-                    data:  users
+                    data: users
                 });
             }
         } catch (error) {
@@ -407,18 +407,18 @@ module.exports = {
             const { id } = req.params;
             const { roleId, fullName, gender, nationalId, phone, email, password } = req.body;
 
-            const updatedUser = await UserService.updateUser({id, roleId, fullName, gender, nationalId, phone, email, password: await bcrypt.hash(password, 10)});
+            const updatedUser = await UserService.updateUser({ id, roleId, fullName, gender, nationalId, phone, email, password: await bcrypt.hash(password, 10) });
             if (updatedUser) {
                 res.status(200).json({
                     success: true,
                     message: 'Update user sucessfull!',
-                    data: {id, roleId, fullName, gender, nationalId, phone, email}
+                    data: { id, roleId, fullName, gender, nationalId, phone, email }
                 });
             } else {
-                res.status(404).json({ 
+                res.status(404).json({
                     success: false,
                     error: 'User not found!',
-                    data: {} 
+                    data: {}
                 });
             }
         } catch (error) {
@@ -434,12 +434,12 @@ module.exports = {
                 res.status(200).json({
                     success: true,
                     message: 'Delete user sucessfull!',
-                    data: {deletedUser}
+                    data: { deletedUser }
                 });
             } else {
-                res.status(404).json({ 
+                res.status(404).json({
                     success: false,
-                    error: 'User not found!', 
+                    error: 'User not found!',
                     data: {}
                 });
             }

@@ -18,7 +18,7 @@ const checkRevokedToken = async (req, res, next) => {
         }
         next();
     } catch (error) {
-        return next(createError(401, 'Failed to authenticate token!'));
+        return next(createError(401, ''));
     }
 };
 
@@ -34,7 +34,7 @@ const verifyToken = async (req, res, next) => {
         req.user = decoded;
         return next();
     } catch (error) {
-        return next(createError(401, 'Failed to authenticate token!'));
+        return next(createError(401, ''));
     }
 }
 
