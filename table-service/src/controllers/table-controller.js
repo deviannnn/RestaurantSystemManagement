@@ -1,131 +1,107 @@
 const createError = require('http-errors');
-const { check } = require('express-validator');
-const validator = require('../middlewares/input-validator');
+const inputChecker = require('../middlewares/input-checker');
 
 const TableService = require('../services/table-service');
 
 module.exports = {
+    /** Expected Input
+     * 
+     * { no, capacity, isVip, status, active } = req.body
+     * 
+     */
     createTable: [
-        check('no')
-            .notEmpty().withMessage('Table no cannot be empty')
-            .isString().withMessage('Table no must be a string'),
-        check('capacity')
-            .notEmpty().withMessage('Capacity cannot be empty')
-            .isInt({ min: 1 }).withMessage('Capacity must be an integer > 0'),
-        check('isVip')
-            .optional()
-            .notEmpty().withMessage('VIP status cannot be empty')
-            .isBoolean().withMessage('VIP status must be a boolean'),
-        check('status')
-            .optional()
-            .notEmpty().withMessage('Status cannot be empty')
-            .isIn(['free', 'occupied', 'reserved']).withMessage('Status must be either free, occupied, or reserved'),
-        check('active')
-            .optional()
-            .notEmpty().withMessage('Active status cannot be empty')
-            .isBoolean().withMessage('Active status must be a boolean'),
-        validator,
+        inputChecker.checkBodyCreateTable,
         async (req, res, next) => {
             try {
                 const { no, capacity, isVip, status, active } = req.body;
-                const newTable = await TableService.createTable(no, capacity, isVip, status, active);
+
+                const newTable = await TableService.createTable({ no, capacity, isVip, status, active });
                 return res.status(201).json({
                     success: true,
                     message: 'Create table sucessfully!',
                     data: { table: newTable }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
 
-    // Get all tables or get table by ID
+    /** Expected Input
+     * 
+     * tableId ? = req.params
+     * 
+     */
     async getTables(req, res, next) {
         try {
-            const { id } = req.params;
-            if (id) {
-                const table = await TableService.getTableById(id);
-                if (table) {
-                    return res.status(200).json({
-                        sucess: true,
-                        message: 'Get table successfully!',
-                        data: { table }
-                    });
-                } else {
-                    return next(createError(404, 'Table not found'));
-                }
+            const { tableId } = req.params;
+            if (tableId) {
+                const table = await TableService.getTableById(tableId);
+                if (!table) return next(createError(404, 'Table not found'));
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Get table successfully!',
+                    data: { table }
+                });
             } else {
                 const tables = await TableService.getAllTables();
-                return res.status(200).json({
+                res.status(200).json({
                     sucess: true,
                     message: 'Get all tables successfully!',
                     data: { tables }
                 });
             }
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
-    // Update table by ID
+    /** Expected Input
+     * 
+     * tableId = req.params
+     * { no, capacity, isVip, status, active } = req.body
+     * 
+     */
     updateTable: [
-        check('no')
-            .optional()
-            .notEmpty().withMessage('Table no cannot be empty.')
-            .isString().withMessage('Table no must be a string.'),
-        check('capacity')
-            .optional()
-            .notEmpty().withMessage('Capacity cannot be empty.')
-            .isInt({ min: 1 }).withMessage('Capacity must be a positive integer.'),
-        check('isVip').optional()
-            .notEmpty().withMessage('VIP status cannot be empty.')
-            .isBoolean().withMessage('VIP status must be a boolean.'),
-        check('status')
-            .optional()
-            .notEmpty().withMessage('Status cannot be empty.')
-            .isIn(['free', 'occupied', 'reserved']).withMessage('Status must be either free, occupied, or reserved.'),
-        check('active')
-            .optional()
-            .notEmpty().withMessage('Active status cannot be empty.')
-            .isBoolean().withMessage('Active status must be a boolean.'),
-        validator,
+        inputChecker.checkBodyUpdateTable,
         async (req, res, next) => {
             try {
-                const { id } = req.params;
+                const { tableId } = req.params;
                 const { no, capacity, isVip, status, active } = req.body;
-                const updatedTable = await TableService.updateTable({ id, no, capacity, isVip, status, active });
-                if (updatedTable) {
-                    return res.status(200).json({
-                        sucess: true,
-                        message: 'Update table successfully!',
-                        data: { table: updatedTable }
-                    });
-                } else {
-                    return next(createError(404, 'Table not found'));
-                }
+
+                const updatedTable = await TableService.updateTable({ id: tableId, no, capacity, isVip, status, active });
+                if (!updatedTable) return next(createError(404, 'Table not found'));
+
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Update table successfully!',
+                    data: { table: updatedTable }
+                });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
 
-    // Delete table by ID
+    /** Expected Input
+     * 
+     * tableId = req.params
+     * 
+     */
     async deleteTable(req, res, next) {
         try {
-            const { id } = req.params;
-            const deletedTable = await TableService.deleteTable(id);
-            if (deletedTable) {
-                return res.status(200).json({
-                    success: true,
-                    message: 'Delete table successfully!',
-                    data: { deletedTable }
-                });
-            } else {
-                return next(createError(404, 'Table not found'));
-            }
+            const { tableId } = req.params;
+
+            const deletedTable = await TableService.deleteTable(tableId);
+            if (!deletedTable) return next(createError(404, 'Table not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete table successfully!',
+                data: { table: deletedTable }
+            });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 };

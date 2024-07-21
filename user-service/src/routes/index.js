@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const RoleController = require('../controllers/role.controller');
-const UserController = require('../controllers/user.controller');
+const RoleController = require('../controllers/role-controller');
+const UserController = require('../controllers/user-controller');
 
 const auth = require('../middlewares/auth');
 
@@ -25,8 +25,8 @@ router.post('/users/resend-mail-active', UserController.resendMailActive);
 
 //CRUD role
 router.post('/roles', RoleController.createRole);
-router.get('/roles/:id?', RoleController.getRoles);
-router.put('/roles/:id', RoleController.updateRole);
-router.delete('/roles/:id', RoleController.deleteRole);
+router.get('/roles/:roleId?', RoleController.getRoles);
+router.put('/roles/:roleId', RoleController.updateRole);
+router.delete('/roles/:roleId', RoleController.deleteRole);
 
 module.exports = router;

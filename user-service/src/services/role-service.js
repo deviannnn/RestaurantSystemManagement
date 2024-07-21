@@ -1,35 +1,39 @@
-const { Role } = require('../models');
+const { Role, User } = require('../models');
 
 module.exports = {
     async createRole(name, active) {
         try {
-            return Role.create({ name, active })
-            .then((newRole) => newRole.get({ plain: true }));
+            const newRole = await Role.create({ name, active });
+            return newRole;
         } catch (error) {
-            console.error('Error create role:', error);
+            console.error('Error creating role:', error);
             throw error;
         }
     },
 
     async getRoleById(id) {
         try {
-            return Role.findByPk(id);
+            return await Role.findByPk(id, {
+                include: [{ model: User, as: 'users' }]
+            });
         } catch (error) {
-            console.error('Error get role by Id:', error);
+            console.error('Error getting role by Id:', error);
             throw error;
         }
     },
 
     async getAllRoles() {
         try {
-            return Role.findAll();
+            return await Role.findAll({
+                include: [{ model: User, as: 'users' }]
+            });
         } catch (error) {
-            console.error('Error get all roles:', error);
+            console.error('Error getting all roles:', error);
             throw error;
         }
     },
 
-    async updateRole(id, name, active) {
+    async updateRole({ id, name, active }) {
         try {
             const [updated] = await Role.update({ name, active }, { where: { id } });
             if (updated) {
@@ -37,7 +41,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error update roles:', error);
+            console.error('Error updating role:', error);
             throw error;
         }
     },
@@ -51,7 +55,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error delete roles:', error);
+            console.error('Error deleting role:', error);
             throw error;
         }
     }

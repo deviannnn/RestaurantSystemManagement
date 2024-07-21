@@ -1,35 +1,35 @@
 const { Table } = require('../models');
 
 module.exports = {
-    async createTable(no, capacity, isVip, status, active) {
+    async createTable({ no, capacity, isVip, status, active }) {
         try {
-            return Table.create({ no, capacity, isVip, status, active })
-            .then((newTable) => newTable.get({ plain: true }));
+            const newTable = await Table.create({ no, capacity, isVip, status, active });
+            return newTable;
         } catch (error) {
-            console.error('Error create table:', error);
+            console.error('Error creating table:', error);
             throw error;
         }
     },
 
     async getTableById(id) {
         try {
-            return Table.findByPk(id);
+            return await Table.findByPk(id);
         } catch (error) {
-            console.error('Error get table by Id:', error);
-            throw error;
-        }      
-    },
-
-    async getAllTables() {
-        try {
-            return Table.findAll();
-        } catch (error) {
-            console.error('Error get all tables:', error);
+            console.error('Error getting table by Id:', error);
             throw error;
         }
     },
 
-    async updateTable({id, no, capacity, isVip, status, active}) {
+    async getAllTables() {
+        try {
+            return await Table.findAll();
+        } catch (error) {
+            console.error('Error getting all tables:', error);
+            throw error;
+        }
+    },
+
+    async updateTable({ id, no, capacity, isVip, status, active }) {
         try {
             const [updated] = await Table.update({ no, capacity, isVip, status, active }, { where: { id } });
             if (updated) {
@@ -37,9 +37,9 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error update tables:', error);
+            console.error('Error updating table:', error);
             throw error;
-        }  
+        }
     },
 
     async deleteTable(id) {
@@ -51,7 +51,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error delete table:', error);
+            console.error('Error deleting table:', error);
             throw error;
         }
     }

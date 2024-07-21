@@ -4,7 +4,7 @@ const { User } = require('../models'); // Assuming you have a User model
 module.exports = {
     async createUser(userData) {
         try {
-            const newUser = (await User.create(userData)).get({ plain: true });
+            const newUser = await User.create(userData);
             return newUser;
         } catch (error) {
             console.error('Error create user:', error);
@@ -22,7 +22,7 @@ module.exports = {
     },
 
     async getUserByEmail(email) {
-        try {   
+        try {
             return await User.findOne({ where: { email } });
         } catch (error) {
             console.error('Error get user by email:', error);
@@ -36,7 +36,7 @@ module.exports = {
         } catch (error) {
             console.error('Error get user by national Id:', error);
             throw error;
-        }   
+        }
     },
 
     async getUserByPhone(phone) {
@@ -54,7 +54,7 @@ module.exports = {
         } catch (error) {
             console.error('Error get user by Id:', error);
             throw error;
-        }    
+        }
     },
 
     async getAllUsers() {
@@ -66,9 +66,9 @@ module.exports = {
         }
     },
 
-    async updateUser({id, roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken}) {
+    async updateUser({ id, roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken }) {
         try {
-            const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken}, { where: { id } });
+            const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken }, { where: { id } });
             if (updated) {
                 return User.findByPk(id);
             }

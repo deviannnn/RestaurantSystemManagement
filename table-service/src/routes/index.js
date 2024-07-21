@@ -5,8 +5,8 @@ const TableController = require('../controllers/table-controller');
 
 // Tables CRUD
 router.post('/tables', TableController.createTable);
-router.get('/tables/:id?', TableController.getTables);
-router.put('/tables/:id', TableController.updateTable);
-router.delete('/tables/:id', TableController.deleteTable);
+router.get('/tables/:tableId?', TableController.getTables);
+router.put('/tables/:tableId', TableController.updateTable);
+router.delete('/tables/:tableId', TableController.deleteTable);
 
 module.exports = router;

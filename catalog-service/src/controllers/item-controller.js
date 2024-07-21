@@ -2,7 +2,7 @@ const createError = require('http-errors');
 const inputChecker = require('../middlewares/input-checker');
 //const upload = require('../middlewares/upload');
 
-const { ItemService, CategoryService, RedisService } = require('../services');
+const { ItemService, RedisService } = require('../services');
 
 const REDIS_KEY_CATALOG_FULL = 'CATALOG_FULL';
 const REDIS_KEY_CATALOG_CATEGORY = 'CATALOG_FULL_CATEGORY';
@@ -58,7 +58,7 @@ module.exports = {
     /** Expected Input
      * 
      * itemId ? = req.params
-      * 
+     * 
      */
     async getItems(req, res, next) {
         try {
@@ -204,7 +204,7 @@ module.exports = {
 
     /** Expected Input
      * 
-     * itemId  = req.params
+     * itemId = req.params
      * { available } = req.body
      * 
      */

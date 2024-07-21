@@ -1,9 +1,5 @@
 const { Category, Item } = require('../models');
 
-const includeOptions = [
-    { model: Item, as: 'items' }
-];
-
 module.exports = {
     async createCategory({ name, description, active }) {
         try {
