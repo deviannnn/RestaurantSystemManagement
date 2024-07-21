@@ -10,5 +10,6 @@ module.exports = async () => {
         console.log(`MySQL connection established on port ${config.port}`);
     } catch (error) {
         console.error('Failed to connect to MySQL', error);
+        process.exit(1);
     }
-}
+};

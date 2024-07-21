@@ -1,4 +1,6 @@
-const RoleService = require('../services/role.service');
+const createError = require('http-errors');
+const { RoleService } = require('../services');
+
 const { validationResult, check } = require('express-validator');
 
 function validate(req, res, next) {
@@ -12,13 +14,13 @@ function validate(req, res, next) {
 
 module.exports = {
     // Create a new role
-    createRole:[
+    createRole: [
         check('name')
             .notEmpty().withMessage('Name is required')
             .isString().withMessage('Name must be a string'),
         check('active')
             .notEmpty().withMessage('Active status is required')
-            .isBoolean().withMessage('Active must be a boolean'), 
+            .isBoolean().withMessage('Active must be a boolean'),
         validate,
         async (req, res, next) => {
             try {
@@ -27,7 +29,7 @@ module.exports = {
                 res.status(201).json({
                     success: true,
                     message: 'Create role successfull!',
-                    data: {newRole}
+                    data: { newRole }
                 });
             } catch (error) {
                 next(error);
@@ -48,10 +50,10 @@ module.exports = {
                         data: {}
                     });
                 } else {
-                    res.status(404).json({ 
+                    res.status(404).json({
                         success: false,
                         error: 'Role not found!',
-                        data: {} 
+                        data: {}
                     });
                 }
             } else {
@@ -64,13 +66,13 @@ module.exports = {
     },
 
     // Update role by ID
-    updateRole:[
+    updateRole: [
         check('name')
             .notEmpty().withMessage('Name is required')
             .isString().withMessage('Name must be a string'),
         check('active')
             .notEmpty().withMessage('Active status is required')
-            .isBoolean().withMessage('Active must be a boolean'), 
+            .isBoolean().withMessage('Active must be a boolean'),
         validate,
         async (req, res, next) => {
             try {
@@ -81,13 +83,13 @@ module.exports = {
                     res.status(200).json({
                         success: true,
                         message: 'Update role successfull!',
-                        data: {updatedRole}
+                        data: { updatedRole }
                     });
                 } else {
-                    res.status(404).json({ 
+                    res.status(404).json({
                         success: false,
                         message: 'Role not found!',
-                        data: {} 
+                        data: {}
                     });
                 }
             } catch (error) {
@@ -105,13 +107,13 @@ module.exports = {
                 res.status(200).json({
                     success: false,
                     message: 'Delete role sucessfull!',
-                    data: {} 
+                    data: {}
                 });
             } else {
-                res.status(404).json({ 
+                res.status(404).json({
                     success: false,
                     message: 'Role not found!',
-                    data: {} 
+                    data: {}
                 });
             }
         } catch (error) {

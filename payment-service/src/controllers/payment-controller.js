@@ -25,7 +25,7 @@ module.exports = {
     /** Expected Input
     * 
     * { userId, orderId, surchargeIds, totalDiscount, note } = req.body;
-    * (surchargeIds is list of surcharge_id)s
+    * (surchargeIds is list of surcharge_id)
     * 
     */
     createPayment: [
@@ -54,7 +54,7 @@ module.exports = {
 
                 res.status(201).json({
                     success: true,
-                    message: 'Payment created successfully',
+                    message: 'Create payment successfully!',
                     data: { payment: { ...payment.dataValues, surcharges: paymentSurcharges } }
                 });
             } catch (error) {

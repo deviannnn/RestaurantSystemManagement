@@ -1,60 +1,57 @@
-const CategoryService = require('../services/category-service');
-const { validationResult, check } = require('express-validator');
+const createError = require('http-errors');
+const inputChecker = require('../middlewares/input-checker');
 
-function validate(req, res, next) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const errorMessages = errors.array().map(error => ({ field: error.path, msg: error.msg }));
-        return res.status(400).json({ success: false, message: errorMessages, data: {} });
-    }
-    next();
-}
+const { CategoryService, RedisService } = require('../services');
+
+const REDIS_KEY_CATALOG_FULL = 'CATALOG_FULL';
+const REDIS_KEY_CATALOG_CATEGORY = 'CATALOG_FULL_CATEGORY';
+const CACHE_EXPIRATION = 10;
 
 module.exports = {
-    // Create a new category
+    /** Expected Input
+     * 
+     * { name, description, active } = req.body
+     * 
+     */
     createCategory: [
-        check('name')
-            .not().isEmpty().withMessage('Name cannot be empty.')
-            .isString().withMessage('Name must be a string.'),
-        check('description')
-            .not().isEmpty().withMessage('Description cannot be empty.')
-            .isString().withMessage('Description must be a string.'),
-        check('active')
-            .not().isEmpty().withMessage('Active status cannot be empty.')
-            .isBoolean().withMessage('Active status must be a boolean.'),
-        validate,
+        inputChecker.checkBodyCreateCategory,
         async (req, res, next) => {
             try {
                 const { name, description, active } = req.body;
-                const newCategory = await CategoryService.createCategory(name, description, active);
+
+                const newCategory = await CategoryService.createCategory({ name, description, active });
                 res.status(201).json({
                     success: true,
                     message: 'Create categories sucessfully!',
-                    data: { newCategory }
+                    data: { category: newCategory }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
-    
-    // Get all categories or get category by ID
+
+    /** Expected Input
+     * 
+     * categoryId ? = req.params
+     * include ? = req.query
+     * 
+     */
     async getCategories(req, res, next) {
         try {
-            const { id } = req.params;
-            if (id) {
-                const category = await CategoryService.getCategoryById(id);
-                if (category) {
-                    res.status(200).json({
-                        sucess: true,
-                        message: 'Get categories successfully!',
-                        data: { category }
-                    });
-                } else {
-                    res.status(404).json({ sucess: false, error: { message: 'Categories not found', data: {} } });
-                }
+            const { categoryId } = req.params;
+            const include = req.query.include === 'true' || req.query.include === '1' ? true : false;
+
+            if (categoryId) {
+                const category = await CategoryService.getCategoryById(categoryId, null, include);
+                if (!category) return next(createError(404, 'Category not found'));
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Get category successfully!',
+                    data: { category }
+                });
             } else {
-                const categories = await CategoryService.getAllCategories();
+                const categories = await CategoryService.getAllCategories(null, include);
                 res.status(200).json({
                     sucess: true,
                     message: 'Get all categories successfully!',
@@ -62,60 +59,115 @@ module.exports = {
                 });
             }
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
-    // Update category by ID
-    updateCategory:[
-        check('id')
-            .not().isEmpty().withMessage('ID cannot be empty.')
-            .isInt({ min: 1 }).withMessage('ID must be a positive integer.'),
-        check('name')
-            .not().isEmpty().withMessage('Name cannot be empty.')
-            .isString().withMessage('Name must be a string.'),
-        check('description')
-            .not().isEmpty().withMessage('Description cannot be empty.')
-            .isString().withMessage('Description must be a string.'),
-        check('active')
-            .not().isEmpty().withMessage('Active status cannot be empty.')
-            .isBoolean().withMessage('Active status must be a boolean.'),
-        validate,
-        async (req, res, next)=>{
+    /** Expected Input
+     * 
+     * { name, description, active } = req.body
+     * 
+     */
+    updateCategory: [
+        inputChecker.checkBodyUpdateCategory,
+        async (req, res, next) => {
             try {
-                const { id } = req.params;
+                const { categoryId } = req.params;
                 const { name, description, active } = req.body;
-                const updatedCategory = await CategoryService.updateCategory({id, name, description, active});
-                if (updatedCategory) {
-                    res.status(200).json({
-                        sucess: true,
-                        message: 'Update categories successfully!',
-                        data: { updatedCategory }
-                    });
-                } else {
-                    res.status(404).json({ sucess: false, error: { message: 'Categories not found', data: {} } });
-                }
+
+                const updatedCategory = await CategoryService.updateCategory({ id: categoryId, name, description, active });
+                if (!updatedCategory) return next(createError(404, 'Category not found'));
+
+                res.status(200).json({
+                    sucess: true,
+                    message: 'Update category successfully!',
+                    data: { category: updatedCategory }
+                });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
-    // Delete category by ID
+
+    /** Expected Input
+     * 
+     * categoryId = req.params
+     * 
+     */
     async deleteCategory(req, res, next) {
         try {
-            const { id } = req.params;
-            const deletedCategory = await CategoryService.deleteCategory(id);
-            if (deletedCategory) {
-                res.status(200).json({
-                    success: true,
-                    message: 'Delete categories successfully!',
-                    data: { deletedCategory }
-                });
-            } else {
-                res.status(404).json({ sucess: false, error: { message: 'Categories not found', data: {} } });
-            }
+            const { categoryId } = req.params;
+
+            const deletedCategory = await CategoryService.deleteCategory(categoryId);
+            if (!deletedCategory) return next(createError(404, 'Category not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete category successfully!',
+                data: { category: deletedCategory }
+            });
         } catch (error) {
-            next(error);
+            return next(error);
         }
-    }
+    },
+
+    async getFullCatalog(req, res, next) {
+        try {
+            // Kiểm tra cache trong Redis
+            let catalog = await RedisService.getCacheData(REDIS_KEY_CATALOG_FULL);
+
+            if (!catalog) {
+                catalog = await CategoryService.getAllCategories(true, true);
+                if (!catalog || catalog.length === 0) return next(createError(404, 'No items found in the catalog'));
+
+                await RedisService.saveCacheData({
+                    key: REDIS_KEY_CATALOG_FULL,
+                    value: catalog,
+                    expireTimeInSeconds: CACHE_EXPIRATION
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Get full catalog successfully!',
+                data: { catalog }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * categoryId = req.params
+     * 
+     */
+    async getFullCatalogByCategory(req, res, next) {
+        try {
+            const { categoryId } = req.params;
+            const REDIS_KEY = `${REDIS_KEY_CATALOG_CATEGORY}:${categoryId}`;
+
+            // Kiểm tra cache trong Redis
+            let catalog = await RedisService.getCacheData(REDIS_KEY);
+
+            if (!catalog) {
+                catalog = await CategoryService.getCategoryById(categoryId, true, true);
+                if (!catalog || catalog.length === 0) return next(createError(404, 'No items found in the catalog with this category'));
+
+                await RedisService.saveCacheData({
+                    key: REDIS_KEY,
+                    value: catalog,
+                    expireTimeInSeconds: CACHE_EXPIRATION
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Get full catalog by category successfully!',
+                data: { catalog }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
 };

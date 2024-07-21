@@ -1,7 +1,6 @@
-const UserService = require('../services/user.service');
-const RabbitMQ = require('../services/rabbitmq-service');
-const Redis = require('../services/redis-service');
-const { generateAccessToken, generateRefreshToken, decodeToken, extractToken, revokedTokens } = require('../utils/jwt');
+const createError = require('http-errors');
+const { UserService, RabbitMQ, RedisService } = require('../services');
+
 const { validationResult, check } = require('express-validator');
 
 const jwt = require('../utils/jwt');
@@ -121,8 +120,8 @@ module.exports = {
                 });
             }
 
-            const accessToken = await generateAccessToken(user);
-            const refreshToken = await generateRefreshToken(user);
+            const accessToken = await jwt.generateAccessToken(user);
+            const refreshToken = await jwt.generateRefreshToken(user);
 
             await UserService.updateUser({ id: user.id, refreshToken: refreshToken });
 
@@ -143,7 +142,7 @@ module.exports = {
 
             await UserService.deleteUserRefreshToken(userId);
 
-            Redis.saveTokenRevoked({
+            RedisService.saveCacheData({
                 key: `${token}`,
                 value: 1,
                 expireTimeInSeconds: 15
@@ -162,7 +161,7 @@ module.exports = {
 
     async verifyAccount(req, res, next) {
         try {
-            const token = extractToken(req);
+            const token = jwt.extractToken(req);
             if (!token) {
                 return res.status(400).json({
                     success: false,
@@ -173,7 +172,7 @@ module.exports = {
 
             let decodedToken;
             try {
-                decodedToken = await decodeToken(token);
+                decodedToken = await jwt.decodeToken(token);
             } catch (err) {
                 return res.status(400).json({
                     success: false,
@@ -274,8 +273,8 @@ module.exports = {
             //Add token in blacklist
             await revokedTokens.add(user.refreshToken);
 
-            const accessTokenNew = await generateAccessToken(user, 'login');
-            const refreshTokenNew = await generateRefreshToken(user);
+            const accessTokenNew = await jwt.generateAccessToken(user, 'login');
+            const refreshTokenNew = await jwt.generateRefreshToken(user);
 
             await UserService.updateUser({ id: user.id, refreshToken: refreshTokenNew });
 

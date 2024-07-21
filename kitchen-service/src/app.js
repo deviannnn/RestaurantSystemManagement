@@ -1,6 +1,5 @@
 require('dotenv').config();
 const WebSocket = require('ws');
-const RabbitMQ = require('./config/rabbitmq');
 const jwt = require('./utils/jwt');
 
 const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || 5000;
@@ -27,6 +26,8 @@ wss.on('connection', (ws) => {
     });
 });
 
+// Connect to rabbitmq
+const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();

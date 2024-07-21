@@ -11,9 +11,30 @@ class RabbitMQ {
         try {
             if (!this.connection) {
                 this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
+                this.connection.on('error', (err) => {
+                    console.error('RabbitMQ connection error:', err);
+                    this.connection = null;
+                    this.channel = null;
+                });
+                this.connection.on('close', () => {
+                    console.log('RabbitMQ connection closed');
+                    this.connection = null;
+                    this.channel = null;
+                });
+                
                 this.channel = await this.connection.createChannel();
+                this.channel.on('error', (err) => {
+                    console.error('RabbitMQ channel error:', err);
+                    this.channel = null;
+                });
+                this.channel.on('close', () => {
+                    console.log('RabbitMQ channel closed');
+                    this.channel = null;
+                });
             }
         } catch (error) {
+            this.connection = null;
+            this.channel = null;
             console.error('Error connecting to RabbitMQ:', error);
             throw error;
         }
@@ -47,9 +68,7 @@ class RabbitMQ {
 
     async publishToQueue(queue, message) {
         try {
-            if (!this.connection || !this.channel) {
-                await this.connect();
-            }
+            if (!this.connection || !this.channel) await this.connect();
 
             await this.assertQueue(queue);
 
@@ -65,9 +84,7 @@ class RabbitMQ {
 
     async publishToExchange(exchange, message, routingKey = '') {
         try {
-            if (!this.connection || !this.channel) {
-                await this.connect();
-            }
+            if (!this.connection || !this.channel) await this.connect();
 
             await this.assertExchange(exchange);
 
@@ -80,16 +97,17 @@ class RabbitMQ {
         }
     }
 
-    async closeConnection() {
-        try {
-            if (this.connection) {
+    async disconnect() {
+        if (this.connection) {
+            try {
                 await this.connection.close();
                 this.connection = null;
                 this.channel = null;
+                console.log('Disconnected from RabbitMQ');
+            } catch (error) {
+                console.error('Error disconnecting from RabbitMQ:', error);
+                throw error;
             }
-        } catch (error) {
-            console.error('Error closing RabbitMQ connection:', error);
-            throw error;
         }
     }
 }

@@ -11,7 +11,7 @@ const checkRevokedToken = async (req, res, next) => {
             return next(createError(401, 'No token provided!'));
         }
 
-        const revokedToken = await Redis.getTokenRevoked(`${token}`);
+        const revokedToken = await Redis.getCacheData(`${token}`);
 
         if (revokedToken && revokedToken == 1) {
             return next(createError(401, 'Token has been revoked!'));

@@ -5,43 +5,55 @@ const includeOptions = [
 ];
 
 module.exports = {
-    async createCategory(name, description, active) {
+    async createCategory({ name, description, active }) {
         try {
-            return Category.create({ name, description, active })
-            .then((newCategory) => newCategory.get({ plain: true }));
+            const newCategory = await Category.create({ name, description, active });
+            return newCategory;
         } catch (error) {
-            console.error('Error create categories:', error);
+            console.error('Error creating category:', error);
             throw error;
         }
     },
 
-    async getCategoryById(id) {
-        try {
-            return await Category.findByPk(id, {
-                include: includeOptions
-            });
-        } catch (error) {
-            console.error('Error get categories by Id:', error);
-            throw error;
-        }
-    },
-
-    async getAllCategories(active = null) {
+    async getCategoryById(id, active = null, include = true) {
         try {
             const whereCondition = active !== null ? { active } : {};
-            const includeCondition = active !== null ? [{ ...includeOptions[0], where: { active } }] : includeOptions;
+            const includeCondition = include ? [{
+                model: Item,
+                as: 'items',
+                where: active !== null ? { active } : {}
+            }] : [];
+
+            return await Category.findByPk(id, {
+                where: whereCondition,
+                include: includeCondition
+            });
+        } catch (error) {
+            console.error('Error getting category by Id:', error);
+            throw error;
+        }
+    },
+
+    async getAllCategories(active = null, include = true) {
+        try {
+            const whereCondition = active !== null ? { active } : {};
+            const includeCondition = include ? [{
+                model: Item,
+                as: 'items',
+                where: active !== null ? { active } : {}
+            }] : [];
 
             return await Category.findAll({
                 where: whereCondition,
                 include: includeCondition
             });
         } catch (error) {
-            console.error('Error get all categories:', error);
+            console.error('Error getting all categories:', error);
             throw error;
         }
     },
 
-    async updateCategory(id, name, description, active) {
+    async updateCategory({ id, name, description, active }) {
         try {
             const [updated] = await Category.update({ name, description, active }, { where: { id } });
             if (updated) {
@@ -49,7 +61,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error update categories:', error);
+            console.error('Error updating category:', error);
             throw error;
         }
     },
@@ -63,7 +75,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error delete categories:', error);
+            console.error('Error deleting category:', error);
             throw error;
         }
     }

@@ -6,22 +6,22 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
 const convertTimezone = require('./middlewares/timezone');
-const connectDB = require('./config/connectDB');
+
+// Connect to database
+const connectdb = require('./config/connectdb');
+connectdb();
+
+// Connect to redis
 const Redis = require('./config/redis');
-// const connectRabbitMQ = require('./config/rabbitmq');
-
-connectDB(); //Test Database connection
-
-const startRedis = async () => {
-    try {
-        await Redis.connect();
-        console.log('Redis is connected');
-    } catch (error) {
-        console.error('Failed to start Redis:', error);
-    }
-};
-startRedis();
-// connectRabbitMQ(); //Test Connect to RabbitMQ
+(async () => {
+  try {
+    await Redis.connect();
+    console.log('Redis is connected');
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error);
+    process.exit(1);
+  }
+});
 
 const app = express();
 

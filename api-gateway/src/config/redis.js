@@ -8,44 +8,26 @@ class RedisConnection {
 
     async connect() {
         if (!this.client) {
-            this.client = redis.createClient({
-                url: this.redisUrl
+            this.client = redis.createClient({ url: this.redisUrl });
+
+            try {
+                await this.client.connect();
+            } catch (error) {
+                this.client = null;
+                throw error;
+            }
+
+            this.client.on('error', (err) => {
+                console.error('Redis connection error:', err);
             });
-
-            return new Promise((resolve, reject) => {
-                this.client.on('error', (err) => {
-                    console.error('Redis connection error:', err);
-                    this.client = null;
-                    reject(err);
-                });
-
-                this.client.on('ready', () => {
-                    console.log('Connected to Redis');
-                    resolve();
-                });
-
-                this.client.connect().catch((err) => {
-                    console.error('Redis connection failed:', err);
-                    this.client = null;
-                    reject(err);
-                });
-            });
-        } else if (!this.client.isOpen) {
-            // Reconnect if client is not open
-            return this.client.connect();
         }
     }
 
     async saveToRedis(key, value, expireTimeInSeconds) {
         try {
-            await this.connect();
+            if (!this.client || !this.client.isOpen) await this.connect();
 
-            if (this.client && this.client.isOpen) {
-                // await this.client.set(key, value, 'EX', expireTimeInSeconds);
-                await this.client.set(key, value, { EX: expireTimeInSeconds });
-            } else {
-                throw new Error('Redis client is not connected.');
-            }
+            await this.client.set(key, JSON.stringify(value), { EX: expireTimeInSeconds });
         } catch (error) {
             console.error(`Error saving ${key} to Redis:`, error);
             throw error;
@@ -54,14 +36,10 @@ class RedisConnection {
 
     async getFromRedis(key) {
         try {
-            await this.connect();
+            if (!this.client || !this.client.isOpen) await this.connect();
 
-            if (this.client && this.client.isOpen) {
-                const value = await this.client.get(key);
-                return value;
-            } else {
-                throw new Error('Redis client is not connected.');
-            }
+            const value = await this.client.get(key);
+            return JSON.parse(value);
         } catch (error) {
             console.error(`Error getting ${key} from Redis:`, error);
             throw error;
@@ -70,25 +48,25 @@ class RedisConnection {
 
     async deleteFromRedis(key) {
         try {
-            await this.connect();
+            if (!this.client || !this.client.isOpen) await this.connect();
 
-            if (this.client && this.client.isOpen) {
-                await this.client.del(key);
-                console.log(`Deleted key ${key} from Redis`);
-            } else {
-                throw new Error('Redis client is not connected.');
-            }
+            await this.client.del(key);
         } catch (error) {
             console.error(`Error deleting ${key} from Redis:`, error);
             throw error;
         }
     }
 
-    async closeConnection() {
-        if (this.client) {
-            await this.client.quit();
-            this.client = null;
-            console.log('Redis connection closed');
+    async disconnect() {
+        if (this.client && this.client.isOpen) {
+            try {
+                await this.client.quit();
+                this.client = null;
+                console.log('Disconnected from Redis');
+            } catch (error) {
+                console.error('Error disconnecting from Redis:', error);
+                throw error;
+            }
         }
     }
 }

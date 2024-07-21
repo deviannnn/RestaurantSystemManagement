@@ -71,7 +71,7 @@ const extractToken = (req) => {
         return req.headers.authorization.split(' ')[1];
     }
     return null;
-}
+};
 
 const decodeToken = async (token) => {
     try {

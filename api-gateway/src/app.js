@@ -1,8 +1,6 @@
-// Require packages
 require('dotenv').config();
 const express = require("express");
 const createError = require('http-errors');
-const rateLimit = require('express-rate-limit');
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -15,8 +13,8 @@ const Redis = require('./config/redis');
     await Redis.connect();
     console.log('Redis is connected');
   } catch (error) {
-    console.error('Failed to start Redis:', error);
-    process.exit(1); // Exit the process with error
+    console.error('Failed to connect to Redis:', error);
+    process.exit(1);
   }
 });
 
@@ -48,13 +46,7 @@ const services = [
 const { checkRevokedToken, verifyToken } = require('./middlewares/auth');
 
 // Middleware function for rate limiting and timeout handling
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 phút
-  max: 20, // Giới hạn mỗi IP 20 yêu cầu mỗi phút
-  handler: (req, res, next) => {
-    next(createError(429));
-  }
-});
+const { limiter } = require('./middlewares/limiter');
 
 // Apply the rate limit and timeout middleware to the proxy
 app.use(limiter);

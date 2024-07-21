@@ -5,12 +5,14 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
-const convertTimezone = require('./middlewares/timezone');
-const connectdb = require('./config/connectdb');
-const RabbitMQ = require('./config/rabbitmq');
 const TableService = require('./services/table-service');
 
-connectdb(); //Test Database connection
+// Connect to database
+const connectdb = require('./config/connectdb');
+connectdb(); 
+
+// Connect to rabbitmq
+const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();
@@ -37,7 +39,7 @@ connectdb(); //Test Database connection
         });
     } catch (error) {
         console.error('Failed to set up RabbitMQ subscriber:', error);
-        process.exit(1); // Exit the process with error
+        process.exit(1);
     }
 })();
 
@@ -48,7 +50,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(convertTimezone);
 
 app.use('/', require('./routes'));
 

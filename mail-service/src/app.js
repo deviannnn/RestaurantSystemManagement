@@ -5,7 +5,35 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
-const RabbitMQ = require('./services/rabbitmq-service');
+const MailService = require('./services/mail-service')
+
+// Connect to rabbitmq
+const RabbitMQ = require('./config/rabbitmq');
+(async () => {
+    try {
+        await RabbitMQ.connect();
+
+        await RabbitMQ.consumeQueue('send_email', (emailData) => {
+            console.log('\nReceived email:', emailData);
+
+            const { type, fullName, gender, email, password, phone, link } = emailData;
+            let mailComposer = null;
+
+            if (type === 'active') {
+                mailComposer = MailService.composeActiveMail(fullName, gender, email, phone, link);
+            }
+
+            if (type === 'resetpassword') {
+                mailComposer = MailService.composeResetPasswordMail(fullName, gender, email, password);
+            }
+
+            MailService.sendEmail(mailComposer);
+        });
+    } catch (error) {
+        console.error('Failed to set up RabbitMQ subscriber:', error);
+        process.exit(1);
+    }
+})();
 
 const app = express();
 
@@ -16,8 +44,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //app.use('/api', require('./routes'));
-
-RabbitMQ.subEmail();
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) { next(createError(404)); });

@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const { Item } = require('../models');
 
 module.exports = {
-    async createItem(name, price, image, description, available, active, categoryId) {
+    async createItem({ name, price, image, description, available, active, categoryId }) {
         try {
             const newItem = await Item.create({ name, price, image, description, available, active, categoryId });
             return newItem;
@@ -12,37 +12,35 @@ module.exports = {
         }
     },
 
-    async getItemById(id) {
+    async getItemById(id, active = null) {
         try {
-            return await Item.findByPk(id);
+            const whereCondition = active !== null ? { active } : {};
+            return await Item.findByPk(id, { where: whereCondition });
         } catch (error) {
             console.error('Error getting item by ID:', error);
             throw error;
         }
     },
 
-    async getAllItems() {
+    async getAllItems(active = null) {
         try {
-            return await Item.findAll();
+            const whereCondition = active !== null ? { active } : {};
+            return await Item.findAll({ where: whereCondition });
         } catch (error) {
             console.error('Error getting all items:', error);
             throw error;
         }
     },
 
-    async searchItemByName(qName) {
-        try {
-            return await Item.findAll({
-                where: {
-                    name: {
-                        [Op.like]: `%${qName}%`,
-                    },
+    async searchItemByName(nameQuery, active = null) {
+        return await Item.findAll({
+            where: {
+                name: {
+                    [Op.like]: `%${nameQuery}%`
                 },
-            });
-        } catch (error) {
-            console.error('Error searching item by name:', error);
-            throw error;
-        }
+                ...(active !== null && { active })
+            }
+        });
     },
 
     async updateItem({ id, name, price, image, description, available, active, categoryId }) {

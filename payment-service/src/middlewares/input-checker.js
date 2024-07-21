@@ -40,7 +40,7 @@ module.exports = {
 
     // { totalDiscount, note } = req.body;
     checkBodyCreatePayment: [
-        check('totalDiscount').optional().notEmpty().isFloat({ min: 0 }).withMessage('Payment TotalDiscount must be a real number > 0'),
+        check('totalDiscount').optional().notEmpty().isFloat({ min: 0 }).withMessage('Payment TotalDiscount must be a real number >= 0'),
         check('note').optional().isString().withMessage('Payment Note must be a string'),
         validator
     ],

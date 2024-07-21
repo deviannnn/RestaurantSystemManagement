@@ -1,157 +1,244 @@
 const createError = require('http-errors');
 const inputChecker = require('../middlewares/input-checker');
+//const upload = require('../middlewares/upload');
 
 const { ItemService, CategoryService, RedisService } = require('../services');
 
-const upload = require('../middlewares/upload');
-const { validationResult, check } = require('express-validator');
+const REDIS_KEY_CATALOG_FULL = 'CATALOG_FULL';
+const REDIS_KEY_CATALOG_CATEGORY = 'CATALOG_FULL_CATEGORY';
+const REDIS_KEY_CATALOG_ITEMS = 'CATALOG_FULL_ITEMS';
+const CACHE_EXPIRATION = 10;
 
-const validator = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const errorDetail = errors.array().map(error => ({ field: error.path, value: error.value, detail: error.msg }));
-        next(createError(400, 'Invalid input', { data: errorDetail }));
+async function handleItemSearch(req, res, next, active) {
+    try {
+        const nameQuery = req.query.name;
+        if (!nameQuery) return next(createError(400, 'Invalid input', { data: { field: 'query.name', value: nameQuery, detail: 'Name query parameter is required' } }));
+
+        const searchedItem = await searchItemsByName(nameQuery, active);
+        if (!searchedItem || searchedItem.length === 0) return next(createError(404, 'No items found with this name'));
+
+        return res.status(200).json({
+            success: true,
+            message: 'Get items by name successfully!',
+            data: { items: searchedItem }
+        });
+    } catch (error) {
+        return next(error);
     }
-    next();
 }
 
 module.exports = {
-    // Create a new item
+    /** Expected Input
+     * 
+     * { name, price, description, available, active, categoryId } = req.body
+     * 
+     */
     createItem: [
-        check('name')
-            .not().isEmpty().withMessage('Name cannot be empty.')
-            .isString().withMessage('Name must be a string.'),
-        check('price')
-            .not().isEmpty().withMessage('Price cannot be empty.')
-            .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
-        check('description')
-            .not().isEmpty().withMessage('Description cannot be empty.')
-            .isString().withMessage('Description must be a string.'),
-        check('available')
-            .not().isEmpty().withMessage('Available status cannot be empty.')
-            .isBoolean().withMessage('Available status must be a boolean.'),
-        check('categoryId')
-            .not().isEmpty().withMessage('Category ID cannot be empty.')
-            .isInt({ min: 1 }).withMessage('Category ID must be a positive integer.'),
-        validator,
-        upload.single('image'),
+        inputChecker.checkBodyCaterogy,
+        inputChecker.checkCaterogyExist,
+        inputChecker.checkBodyCreateItem,
         async (req, res, next) => {
             try {
-                const { name, price, description, available, categoryId } = req.body;
-                const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
-                const newItem = await ItemService.createItem(name, price, image, description, available, categoryId);
-                return res.status(201).json({
+                const { name, price, description, available, active, categoryId } = req.body;
+                // const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
+                const image = 'temp.png';
+
+                const newItem = await ItemService.createItem({ name, price, image, description, available, active, categoryId });
+                res.status(201).json({
                     success: true,
                     message: 'Create item sucessfully!',
-                    data: { newItem }
+                    data: { item: newItem }
                 });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
     ],
 
-    async toggleAvailable(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { available } = req.body;
-
-            const toggledItem = await ItemService.updateItem({ id, available });
-            if (toggledItem) {
-
-                await RedisService.delItemsToRedis('allItemsClient');
-
-                const allItemsClient = await CategoryService.getAllCategories(true);
-                await RedisService.saveItemsForClient({
-                    key: 'allItemsClient',
-                    value: JSON.stringify(allItemsClient),
-                    expireTimeInSeconds: 50
-                });
-
-                return res.status(200).json({
-                    sucess: true,
-                    message: 'Toggle item successfully!',
-                    data: { toggledItem }
-                });
-            } else {
-                return res.status(404).json({ sucess: false, error: { message: 'Item not found', data: {} } });
-            }
-        } catch (error) {
-            next(error);
-        }
-    },
-
-    // Get all items or get item by ID
+    /** Expected Input
+     * 
+     * itemId ? = req.params
+      * 
+     */
     async getItems(req, res, next) {
         try {
-            const { id } = req.params;
-            if (id) {
-                const item = await ItemService.getItemById(id);
-                if (!item) {
-                    return res.status(404).json({ sucess: false, error: { message: 'Item not found', data: {} } });
-                }
-                return res.status(200).json({
-                    sucess: true,
+            const { itemId } = req.params;
+            if (itemId) {
+                const item = await ItemService.getItemById(itemId);
+                if (!item) return next(createError(404, 'Item not found'));
+                res.status(200).json({
+                    success: true,
                     message: 'Get item successfully!',
                     data: { item }
                 });
             } else {
-                const allItems = await ItemService.getAllItems();
-                return res.status(200).json({
-                    sucess: true,
+                const items = await ItemService.getAllItems();
+                res.status(200).json({
+                    success: true,
                     message: 'Get all items successfully!',
-                    data: { allItems }
+                    data: { items }
                 });
             }
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
-    async getItemsForClient(req, res, next) {
+    /** Expected Input
+     * 
+     * itemId  = req.params
+     * { name, price, description, available, active, categoryId } = req.body
+     * 
+     */
+    updateItem: [
+        inputChecker.checkBodyUpdateItem,
+        inputChecker.checkCaterogyExist,
+        async (req, res, next) => {
+            try {
+                const { itemId } = req.params;
+                const { name, price, description, available, active, categoryId } = req.body;
+                //const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
+                const image = 'temp.png';
+
+                const updatedItem = await ItemService.updateItem({ id: itemId, name, price, image, description, available, active, categoryId });
+                if (!updatedItem) return next(createError(404, 'Item not found'));
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Update item successfully!',
+                    data: { item: updatedItem }
+                });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    ],
+
+    /** Expected Input
+     * 
+     * itemId = req.params
+     * 
+     */
+    async deleteItem(req, res, next) {
         try {
-            const qName = req.query.name;
+            const { itemId } = req.params;
 
-            if (qName) {
-                const find = await ItemService.searchItemByName(qName);
-                if (!find) {
-                    return res.status(404).json({ sucess: false, error: { message: 'Could not find a dish with that name', data: {} } });
-                }
-                return res.status(200).json({
-                    sucess: true,
-                    message: 'Get all items for client successfully!',
-                    data: { find }
-                });
-            } else {
-                const allItemsClient = await RedisService.getItemsToRedis('allItemsClient');
+            const deletedItem = await ItemService.deleteItem(itemId);
+            if (!deletedItem) return next(createError(404, 'Item not found'));
 
-                if (allItemsClient) {
-                    return res.status(300).json({
-                        sucess: true,
-                        message: 'Get all items for client successfully!',
-                        data: JSON.parse(allItemsClient)
-                    });
-                }
-
-                const item = await CategoryService.getAllCategories(true);
-
-                await RedisService.saveItemsForClient({
-                    key: 'allItemsClient',
-                    value: JSON.stringify(item),
-                    expireTimeInSeconds: 10
-                });
-
-                return res.status(200).json({
-                    sucess: true,
-                    message: 'Get all items for client successfully!',
-                    data: { item }
-                });
-            }
+            return res.status(200).json({
+                success: true,
+                message: 'Delete item successfully!',
+                data: { item: deletedItem }
+            });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
+    /** Expected Input
+     * 
+     * nameQuery = req.query.name
+     * 
+     */
+    async getItemsSearch(req, res, next) {
+        return handleItemSearch(req, res, next, null); // không lọc theo active
+    },
+
+    async getFullCatalogWithItems(req, res, next) {
+        try {
+            // Kiểm tra cache trong Redis
+            let items = await RedisService.getCacheData(REDIS_KEY_CATALOG_ITEMS);
+
+            if (!items) {
+                items = await ItemService.getAllItems(true);
+                if (!items || items.length === 0) return next(createError(404, 'No items found in the catalog'));
+
+                await RedisService.saveCacheData({
+                    key: REDIS_KEY_CATALOG_ITEMS,
+                    value: items,
+                    expireTimeInSeconds: CACHE_EXPIRATION
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Get full catalog with items successfully!',
+                data: { items }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * itemId = req.params
+     * 
+     */
+    async getCatalogByItem(req, res, next) {
+        try {
+            const { itemId } = req.params;
+
+            const item = await ItemService.getItemById(itemId, true);
+            if (!item) return next(createError(404, 'Item not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Get item successfully!',
+                data: { item }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * nameQuery = req.query.name
+     * 
+     */
+    async getCatalogItemsSearch(req, res, next) {
+        return handleItemSearch(req, res, next, true);
+    },
+
+    /** Expected Input
+     * 
+     * itemId  = req.params
+     * { available } = req.body
+     * 
+     */
+    async toggleAvailable(req, res, next) {
+        try {
+            const { itemId } = req.params;
+            const { available } = req.body;
+
+            if (typeof available !== 'boolean') return next(createError(400, 'Invalid input', { data: { field: 'available', value: available, detail: 'Item Available status must be a boolean' } }));
+
+            const toggledItem = await ItemService.updateItem({ id: itemId, available });
+            if (!toggledItem) next(createError(404, 'Item not found'));
+
+            // reset cache
+            await RedisService.deleteCacheData(REDIS_KEY_CATALOG_FULL);
+            await RedisService.deleteCacheData(`${REDIS_KEY_CATALOG_CATEGORY}:${toggledItem.categoryId}`);
+            await RedisService.deleteCacheData(REDIS_KEY_CATALOG_ITEMS);
+
+            res.status(200).json({
+                success: true,
+                message: 'Toggle item successfully!',
+                data: { item: toggledItem }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * { itemIds } = req.body
+     * (itemIds is list of item_id)
+     * 
+     */
     batchValidator: [
         inputChecker.checkItemIds,
         async (req, res, next) => {
@@ -165,74 +252,8 @@ module.exports = {
 
                 res.status(200).json({ success: true, message: 'All items are valid', data: { items: validItems } });
             } catch (error) {
-                next(error);
+                return next(error);
             }
         }
-    ],
-
-    // Update item by ID
-    updateItem: [
-        check('name').optional()
-            .not().isEmpty().withMessage('Name cannot be empty.')
-            .isString().withMessage('Name must be a string.'),
-        check('price').optional()
-            .not().isEmpty().withMessage('Price cannot be empty.')
-            .isFloat({ min: 0 }).withMessage('Price must be a positive number.'),
-        // check('image')
-        //     .not().isEmpty().withMessage('Image cannot be empty.')
-        //     .isURL().withMessage('Image must be a valid URL.'),
-        check('description').optional()
-            .not().isEmpty().withMessage('Description cannot be empty.')
-            .isString().withMessage('Description must be a string.'),
-        check('available').optional()
-            .not().isEmpty().withMessage('Available status cannot be empty.')
-            .isBoolean().withMessage('Available status must be a boolean.'),
-        check('active').optional()
-            .not().isEmpty().withMessage('Active status cannot be empty.')
-            .isBoolean().withMessage('Active status must be a boolean.'),
-        check('categoryId').optional()
-            .not().isEmpty().withMessage('Category ID cannot be empty.')
-            .isInt({ min: 1 }).withMessage('Category ID must be a positive integer.'),
-        validator,
-        // upload.single('image'), // Middleware xử lý upload ảnh
-        async (req, res, next) => {
-            try {
-                const { id } = req.params;
-                const { name, price, description, available, active, categoryId } = req.body;
-                //const image = req.file ? req.file.path : null; // Đường dẫn ảnh sau khi upload
-                const image = 'temp.png';
-                const updatedItem = await ItemService.updateItem({ id, name, price, image, description, available, active, categoryId });
-                if (updatedItem) {
-                    return res.status(200).json({
-                        sucess: true,
-                        message: 'Update item successfully!',
-                        data: { updatedItem }
-                    });
-                } else {
-                    return res.status(404).json({ sucess: false, error: { message: 'Item not found', data: {} } });
-                }
-            } catch (error) {
-                next(error);
-            }
-        }
-    ],
-
-    // Delete item by ID
-    async deleteItem(req, res, next) {
-        try {
-            const { id } = req.params;
-            const deletedItem = await ItemService.deleteItem(id);
-            if (deletedItem) {
-                return res.status(200).json({
-                    sucess: true,
-                    message: 'Delete item successfully!',
-                    data: { deletedItem }
-                });
-            } else {
-                return res.status(404).json({ sucess: false, error: { message: 'Item not found', data: {} } });
-            }
-        } catch (error) {
-            next(error);
-        }
-    }
+    ]
 };

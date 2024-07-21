@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('restaurantsystemmanagement:server');
 var http = require('http');
+const RabbitMQ = require('../config/rabbitmq');
 
 /**
  * Get port from environment and store in Express.
@@ -28,6 +29,20 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+/**
+ * Handle SIGINT and SIGTERM to gracefully shutdown
+ */
+
+process.on('SIGINT', async () => {
+  await RabbitMQ.disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await RabbitMQ.disconnect();
+  process.exit(0);
+});
 
 /**
  * Normalize a port into a number, string, or false.
