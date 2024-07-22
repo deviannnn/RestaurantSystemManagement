@@ -30,17 +30,17 @@ module.exports = {
       nationalId: {
         allowNull: false,
         type: Sequelize.STRING,
-        // unique: true
+        unique: true
       },
       phone: {
         allowNull: false,
         type: Sequelize.STRING,
-        // unique: true
+        unique: true
       },
-      email: {
+      gmail: {
         allowNull: false,
         type: Sequelize.STRING,
-        // unique: true
+        unique: true
       },
       password: {
         allowNull: false,
@@ -50,10 +50,6 @@ module.exports = {
         allowNull: false,
         type: Sequelize.BOOLEAN,
         defaultValue: false
-      },
-      refreshToken: { 
-        type: Sequelize.STRING(1000), 
-        allowNull: true 
       },
       createdAt: {
         allowNull: false,

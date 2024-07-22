@@ -23,13 +23,10 @@ const RabbitMQ = require('./config/rabbitmq');
 
 const app = express();
 
-const { extractUserFromHeaders } = require('./middlewares/auth');
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(extractUserFromHeaders);
 
 app.use('/', require('./routes'));
 

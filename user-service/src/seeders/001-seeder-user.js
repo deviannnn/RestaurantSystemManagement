@@ -11,10 +11,9 @@ module.exports = {
         gender: true,
         nationalId: '123456789',
         phone: '0123456789',
-        email: 'admin@example.com',
+        gmail: 'admin@gmail.com',
         password: '$2b$10$Y3CMsYsQxgvxStO6/vH7iOIvom6C8w40CX1nDUD81VdRvunjCdAx.',
         active: true,
-        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -24,10 +23,9 @@ module.exports = {
         gender: true,
         nationalId: '5464568768',
         phone: '05464568768',
-        email: 'manager@example.com',
+        gmail: 'manager@gmail.com',
         password: '$2b$10$Y3CMsYsQxgvxStO6/vH7iOIvom6C8w40CX1nDUD81VdRvunjCdAx.',
         active: true,
-        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -37,10 +35,9 @@ module.exports = {
         gender: false,
         nationalId: '543216789',
         phone: '0543216789',
-        email: 'chef@example.com',
+        gmail: 'chef@gmail.com',
         password: '$2b$10$Y3CMsYsQxgvxStO6/vH7iOIvom6C8w40CX1nDUD81VdRvunjCdAx.',
         active: true,
-        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       },
@@ -50,10 +47,9 @@ module.exports = {
         gender: true,
         nationalId: '3453453459',
         phone: '03453453459',
-        email: 'staff@example.com',
+        gmail: 'staff@gmail.com',
         password: '$2b$10$Y3CMsYsQxgvxStO6/vH7iOIvom6C8w40CX1nDUD81VdRvunjCdAx.',
         active: true,
-        refreshToken: "",
         createdAt: new Date(),
         updatedAt: new Date()
       }

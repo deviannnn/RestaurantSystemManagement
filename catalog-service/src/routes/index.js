@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 const { CategoryController, ItemController } = require('../controllers');
+const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
+
+
+router.use(extractUserFromHeaders);
 
 // Categories CRUD
 router.post('/categories', CategoryController.createCategory);

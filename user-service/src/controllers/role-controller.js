@@ -83,7 +83,11 @@ module.exports = {
         },
     ],
 
-    // Delete role by ID
+    /** Expected Input
+     * 
+     * { roleId } = req.params
+     * 
+     */
     async deleteRole(req, res, next) {
         try {
             const { roleId } = req.params;

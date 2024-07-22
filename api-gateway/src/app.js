@@ -69,7 +69,6 @@ services.forEach(({ route, target }) => {
       proxyRes: (proxyRes, req, res) => { },
       error: (err, req, res) => {
         console.error('Proxy error:', err);
-        next(err);
       },
     }
   };

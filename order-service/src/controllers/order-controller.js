@@ -111,10 +111,10 @@ async function processUpdateOrderItems(orderId, orderItems) {
 
 module.exports = {
     /** Expected Input
-    * 
-    * tableId = req.body;
-    * 
-    */
+     * 
+     * tableId = req.body;
+     * 
+     */
     createOrder: [
         inputChecker.checkBodyTable,
         inputChecker.checkTableExist,

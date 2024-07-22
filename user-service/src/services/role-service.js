@@ -11,10 +11,11 @@ module.exports = {
         }
     },
 
-    async getRoleById(id) {
+    async getRoleById(id, include = true) {
         try {
+            const includeCondition = include ? [{ model: User, as: 'users' }] : [];
             return await Role.findByPk(id, {
-                include: [{ model: User, as: 'users' }]
+                include: includeCondition
             });
         } catch (error) {
             console.error('Error getting role by Id:', error);
@@ -22,10 +23,11 @@ module.exports = {
         }
     },
 
-    async getAllRoles() {
+    async getAllRoles(include = true) {
         try {
+            const includeCondition = include ? [{ model: User, as: 'users' }] : [];
             return await Role.findAll({
-                include: [{ model: User, as: 'users' }]
+                include: includeCondition
             });
         } catch (error) {
             console.error('Error getting all roles:', error);

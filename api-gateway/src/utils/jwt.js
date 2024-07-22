@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const secretKey = process.env.JWT_SECRET;
+const ACCESSTOKEN_KEY = process.env.JWT_SECRETKEY_ACCESSTOKEN;
 
 const extractToken = (req) => {
     if (req.query && req.query.token) {
@@ -12,9 +12,9 @@ const extractToken = (req) => {
     return null;
 }
 
-const decodeToken = async (token) => {
+const decodeToken = (token) => {
     try {
-        return await jwt.verify(token, secretKey);
+        return jwt.verify(token, ACCESSTOKEN_KEY);
     } catch (error) {
         console.error('Error decoding token:', error.message);
         throw error;

@@ -50,8 +50,10 @@ module.exports = {
         }
 
         try {
-            const category = await CategoryService.getCategoryById(categoryId, false);
-            req.category = category;
+            const categoryData = await CategoryService.getCategoryById(categoryId, null, false);
+            if (!categoryData) return next(createError(404, 'Category not found'));
+
+            req.category = categoryData;
             return next();
         } catch (error) {
             return next(error);

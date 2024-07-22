@@ -3,14 +3,13 @@ const createError = require('http-errors');
 const { check } = require('express-validator');
 const validator = require('./vaildator');
 
-const CatalogService = process.env.CATALOG_SERVICE_HOSTNAME || 'http://localhost:5000';
-const TableService = process.env.TABLE_SERVICE_HOSTNAME || 'http://localhost:5004';
+const API_GATEWAY = 'http://localhost:5000';
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
 
 module.exports = {
     checkBodyTable: [
-        check('tableId').notEmpty().withMessage('Table ID cannot be empty'),
+        check('tableId').trim().notEmpty().withMessage('Table ID is required'),
         validator
     ],
 
@@ -22,7 +21,7 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(`${TableService}/api/v1/tables/${tableId}`);
+            const response = await axios.get(`${API_GATEWAY}/tables/${tableId}`); // no exist will throw
             req.table = response.data.data.table;
             return next();
         } catch (error) {
@@ -68,15 +67,15 @@ module.exports = {
     // Expecting an array of items { itemId, quantity, note }
     checkBodyItems: [
         check('items').isArray({ min: 1 }).withMessage('Items must be a non-empty array'),
-        check('items.*.itemId').notEmpty().withMessage('Item ID cannot be empty'),
-        check('items.*.quantity').notEmpty().isInt().withMessage('Item Quantity must be an integer > 0'),
+        check('items.*.itemId').trim().notEmpty().withMessage('Item ID is required'),
+        check('items.*.quantity').trim().notEmpty().isInt().withMessage('Item Quantity must be an integer > 0'),
         check('items.*.note').optional().isString().withMessage('Item Note must be a string'),
         validator,
         async (req, res, next) => {
             const items = req.body.items;
             try {
                 const itemIds = items.map(i => i.itemId);
-                const response = await axios.post(`${CatalogService}/api/v1/items/batch`, { itemIds });
+                const response = await axios.post(`${API_GATEWAY}/items/batch`, { itemIds }); // no exist will throw
                 // Gán dữ liệu trả về vào req
                 req.itemDatas = response.data.data.items.map(itemRes => {
                     const item = items.find(i => i.itemId === itemRes.id);
@@ -92,21 +91,32 @@ module.exports = {
     // Expecting an array of orderItems { orderItemId, quantity, note }
     checkBodyOrderItems: [
         check('orderItems').isArray({ min: 1 }).withMessage('OrderItems must be a non-empty array'),
-        check('orderItems.*.orderItemId').notEmpty().withMessage('OrderItems ID cannot be empty'),
-        check('orderItems.*.quantity').notEmpty().isInt().withMessage('OrderItems Quantity must be an integer > 0'),
+        check('orderItems.*.orderItemId').trim().notEmpty().withMessage('OrderItems ID is required'),
+        check('orderItems.*.quantity').trim().notEmpty().isInt().withMessage('OrderItems Quantity must be an integer > 0'),
         check('orderItems.*.note').optional().isString().withMessage('OrderItems Note must be a string'),
         validator
     ],
 
     checkBodyUpdateOrder: [
-        check('status').optional().notEmpty().isIn(['in_progress', 'finished', 'cancelled']).withMessage('Order Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
-        check('active').optional().notEmpty().isBoolean().withMessage('Order Active must be a boolean value'),
-        check('tableId').optional().notEmpty().withMessage('Order Table ID cannot be empty'),
+        check('status')
+            .optional()
+            .trim()
+            .notEmpty().withMessage('Order Status is required')
+            .isIn(['in_progress', 'finished', 'cancelled']).withMessage('Order Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
+        check('active')
+            .optional()
+            .trim()
+            .notEmpty().withMessage('Order\'s Active status is required')
+            .isBoolean().withMessage('Order\'s Active status must be a boolean value'),
+        check('tableId')
+            .optional()
+            .trim()
+            .notEmpty().withMessage('Table ID is required'),
         validator
     ],
 
     checkBodyOrderItemStatus: [
-        check('status').notEmpty().isIn(['in_progress', 'finished', 'cancelled']).withMessage('OrderItem Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
+        check('status').trim().notEmpty().isIn(['in_progress', 'finished', 'cancelled']).withMessage('OrderItem Status must be either \'in_progress\', \'finished\', or \'cancelled\''),
         validator
     ]
 };

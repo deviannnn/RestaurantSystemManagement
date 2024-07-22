@@ -38,7 +38,7 @@ class RedisConnection {
         try {
             if (!this.client || !this.client.isOpen) await this.connect();
 
-            const value = await this.client.get(key);
+            const value = await this.client.get(key) || null;
             return JSON.parse(value);
         } catch (error) {
             console.error(`Error getting ${key} from Redis:`, error);

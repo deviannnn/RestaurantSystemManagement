@@ -1,11 +1,11 @@
 const RabbitMQ = require('../config/rabbitmq');
 
 module.exports = {
-    async pubEmail(emailData) {
+    async publishNewMail(mailData) {
         try {
-            await RabbitMQ.publishToQueue('send_email', emailData);
+            await RabbitMQ.publishToQueue('send-mail', mailData);
         } catch (error) {
-            console.error('Error publishing email to notification service:', error);
+            console.error('Error publishing mail to mail service:', error);
             throw error;
         }
     }

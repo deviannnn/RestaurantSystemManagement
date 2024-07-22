@@ -2,30 +2,21 @@ require('dotenv').config();
 const { User } = require('../models'); // Assuming you have a User model
 
 module.exports = {
-    async createUser(userData) {
+    async createUser({ roleId, fullName, gender, nationalId, phone, gmail, password }) {
         try {
-            const newUser = await User.create(userData);
+            const newUser = await User.create({ roleId, fullName, gender, nationalId, phone, gmail, password });
             return newUser;
         } catch (error) {
-            console.error('Error create user:', error);
+            console.error('Error creating user:', error);
             throw error;
         }
     },
 
-    async getUserByRefreshToken(refreshToken) {
+    async getUserByGmail(gmail) {
         try {
-            return await User.findOne({ where: { refreshToken } });
+            return await User.findOne({ where: { gmail } });
         } catch (error) {
-            console.error('Error get user by refreshtoken', error);
-            throw error;
-        }
-    },
-
-    async getUserByEmail(email) {
-        try {
-            return await User.findOne({ where: { email } });
-        } catch (error) {
-            console.error('Error get user by email:', error);
+            console.error('Error get user by gmail:', error);
             throw error;
         }
     },
@@ -50,31 +41,31 @@ module.exports = {
 
     async getUserById(id) {
         try {
-            return User.findByPk(id);
+            return await User.findByPk(id);
         } catch (error) {
-            console.error('Error get user by Id:', error);
+            console.error('Error getting user by Id:', error);
             throw error;
         }
     },
 
     async getAllUsers() {
         try {
-            return User.findAll();
+            return await User.findAll();
         } catch (error) {
             console.error('Error get all users:', error);
             throw error;
         }
     },
 
-    async updateUser({ id, roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken }) {
+    async updateUser({ id, roleId, fullName, gender, nationalId, phone, gmail, password, active, refreshToken }) {
         try {
-            const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, email, password, active, refreshToken }, { where: { id } });
+            const [updated] = await User.update({ roleId, fullName, gender, nationalId, phone, gmail, password, active, refreshToken }, { where: { id } });
             if (updated) {
                 return User.findByPk(id);
             }
             return null;
         } catch (error) {
-            console.error('Error update user:', error);
+            console.error('Error updating user:', error);
             throw error;
         }
     },
@@ -97,7 +88,7 @@ module.exports = {
             }
             return null;
         } catch (error) {
-            console.error('Error delete user:', error);
+            console.error('Error deleting user:', error);
             throw error;
         }
     }

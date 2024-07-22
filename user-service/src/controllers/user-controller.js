@@ -1,449 +1,374 @@
 const createError = require('http-errors');
-const { UserService, RabbitMQ, RedisService } = require('../services');
-
-const { validationResult, check } = require('express-validator');
-
-const jwt = require('../utils/jwt');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const generatePassword = require('generate-password');
+const randomPassword = require('generate-password');
 
-const domain = `http://${process.env.HOST_NAME}:${process.env.PORT}`;
+const jwtUtils = require('../utils/jwt');
+const inputChecker = require('../middlewares/input-checker');
 
-function validate(req, res, next) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const errorMessages = errors.array().map(error => ({ field: error.path, msg: error.msg }));
-        return res.status(400).json({ success: false, message: errorMessages, data: {} });
-    }
-    next();
-}
+const { UserService, RabbitMQService, RedisService } = require('../services');
+
+const SALT_PASSWORD = 10;
+const API_GATEWAY = 'http://localhost:5000';
+
+const hashToken = (token) => {
+    return crypto.createHash('sha256').update(token).digest('hex');
+};
 
 module.exports = {
+    /** Expected Input
+     * 
+     * { roleId, fullName, gender, nationalId, phone, gmail } = req.body
+     * 
+     */
     register: [
-        check('fullName')
-            .not().isEmpty().withMessage('Fullname cannot be empty.')
-            .matches(/^[\p{L}\s]*$/u).withMessage('Fullname should only contain letters and spaces.'),
-
-        check('gender')
-            .not().isEmpty().withMessage('Gender cannot be empty.')
-            .isIn(['true', 'false']).withMessage('Invalid gender value.'),
-
-        check('nationalId')
-            .not().isEmpty().withMessage('National ID cannot be empty.')
-            .isNumeric().withMessage('National ID must contain only numbers.')
-            .isLength(12).withMessage('National ID must be 12 digits long.')
-            .custom(async (nationalId) => {
-                const existingAccount = await UserService.getUserByNationalId(nationalId);
-                if (existingAccount) {
-                    throw new Error('National ID already exists.');
-                }
-
-            }),
-
-        check('phone')
-            .not().isEmpty().withMessage('Phone cannot be empty.')
-            .isNumeric().withMessage('Phone must contain only numbers.')
-            .isLength({ min: 10, max: 11 }).withMessage('Phone must be 10 or 11 digits long.')
-            .custom(async (phone) => {
-                const existingAccount = await UserService.getUserByPhone(phone);
-                if (existingAccount) {
-                    throw new Error('Phone number already exists.');
-                }
-            }),
-
-        check('email')
-            .matches(/^\w+([\.-]?\w+)*@gmail\.com$/).withMessage('Incorrect gmail format')
-            .custom(async (email) => {
-                const existingAccount = await UserService.getUserByEmail(email);
-                if (existingAccount) {
-                    throw new Error('Email already exists.');
-                }
-            }),
-
-        validate,
-
+        inputChecker.checkBodyRole,
+        inputChecker.checkRoleExist,
+        inputChecker.checkBodyRegisterUser,
         async (req, res, next) => {
             try {
-                const { roleId, fullName, gender, nationalId, phone, email } = req.body;
-                const userData = { roleId, fullName, gender, nationalId, phone, email };
+                const { roleId, fullName, gender, nationalId, phone, gmail } = req.body;
 
-                userData.password = await bcrypt.hash(userData.phone, 10);
-                const newUser = await UserService.createUser(userData);
+                const password = randomPassword.generate({ length: 10, numbers: true, symbols: true });
+                const hashPassword = await bcrypt.hash(password, SALT_PASSWORD);
 
-                if (newUser) {
-                    const token = jwt.generateActiveToken(newUser.id);
-                    const link = `${domain}/active?token=${token}`;
+                const newUser = await UserService.createUser({ roleId, fullName, gender, nationalId, phone, gmail, password: hashPassword });
 
-                    const mailContent = {
-                        type: 'active',
-                        fullName: newUser.fullName,
-                        gender: newUser.gender,
-                        email: newUser.email,
-                        phone: newUser.phone,
-                        link: link
-                    }
+                const token = jwtUtils.generateToken({ id: newUser.id }, 'active');
+                const link = `${API_GATEWAY}/auth/active?token=${token}`;
 
-                    RabbitMQ.pubEmail(JSON.stringify(mailContent));
+                const dataToSend = { type: 'active', fullName, gender, gmail, password, link }
+                await RabbitMQService.publishNewMail(dataToSend).catch(err => {
+                    console.error('Error publishing On User Registed:', err);
+                });
 
-                    return res.status(201).json({
-                        success: true,
-                        message: "Register successfull!",
-                        data: { user: { roleId, fullName, gender, nationalId, phone, email } }
-                    });
-                }
+                res.status(201).json({
+                    success: true,
+                    message: 'Regist User\'s account successfully!',
+                    data: { user: newUser }
+                });
             } catch (error) {
-                console.log(error.message);
-                next(error);
+                return next(error);
             }
         }
     ],
 
-
-    async login(req, res, next) {
+    /** Expected Input
+     * 
+     * userId ? = req.params
+     * 
+     */
+    async getUsers(req, res, next) {
         try {
-            const { email, password } = req.body;
-            const userData = { email, password };
-
-            const user = await UserService.getUserByEmail(userData.email)
-            if (!user || !bcrypt.compareSync(userData.password, user.password)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid username or password!',
-                    data: {}
+            const { userId } = req.params;
+            if (userId) {
+                const user = await UserService.getUserById(userId);
+                if (!user) return next(createError(404, 'User\'s account not found'));
+                res.status(200).json({
+                    success: true,
+                    message: 'Get user sucessfully!',
+                    data: { user }
+                });
+            } else {
+                const users = await UserService.getAllUsers();
+                res.status(200).json({
+                    success: true,
+                    message: 'Get all user successfully!',
+                    data: { users }
                 });
             }
-            if (!user.active) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Account has not been activated!',
-                    data: {}
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * userId = req.params
+     * { roleId, fullName, gender, nationalId, phone, gmail } = req.body
+     * 
+     */
+    updateUser: [
+        inputChecker.checkBodyUpdateUser,
+        inputChecker.checkRoleExist,
+        async (req, res, next) => {
+            try {
+                const { userId } = req.params;
+                const { roleId, fullName, gender, nationalId, phone, gmail } = req.body;
+
+                const updatedUser = await UserService.updateUser({ id: userId, roleId, fullName, gender, nationalId, phone, gmail });
+                if (!updatedUser) return next(createError(404, 'User not found'));
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Update user sucessfully!',
+                    data: { id, roleId, fullName, gender, nationalId, phone, gmail }
                 });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    ],
+
+    /** Expected Input
+     * 
+     * userId = req.params
+     * 
+     */
+    async deleteUser(req, res, next) {
+        try {
+            const { userId } = req.params;
+
+            const deletedUser = await UserService.deleteUser(userId);
+            if (!deletedUser) return next(createError(404, 'User not found'));
+
+            res.status(200).json({
+                success: true,
+                message: 'Delete user sucessfully!',
+                data: { user: deletedUser }
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+    /** Expected Input
+     * 
+     * token = req.query.token
+     * 
+     */
+    async activateAccount(req, res, next) {
+        try {
+            const activeToken = jwtUtils.extractToken(req);
+            if (!activeToken) return next(createError(401, 'No ActiveToken provided!'));
+
+            let decoded;
+            try {
+                decoded = jwtUtils.decodeToken(activeToken, 'active');
+            } catch (error) {
+                return next(createError(401, ''));
             }
 
-            const accessToken = await jwt.generateAccessToken(user);
-            const refreshToken = await jwt.generateRefreshToken(user);
-
-            await UserService.updateUser({ id: user.id, refreshToken: refreshToken });
+            const activatedUser = await UserService.updateUser({ id: decoded.id, active: true });
+            if (!activatedUser) return next(createError(404, 'User\'s account not found'));
 
             return res.status(200).json({
                 success: true,
-                message: 'Login successfully!',
-                data: { user, accessToken, refreshToken }
-            })
+                message: 'Activate User\'s account successfully!',
+                data: {}
+            });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
+
+    /** Expected Input
+     * 
+     * { gmail, password } = req.body
+     * 
+     */
+    login: [
+        inputChecker.checkBodyLogin,
+        async (req, res, next) => {
+            try {
+                const { gmail, password } = req.body;
+
+                const user = await UserService.getUserByGmail(gmail);
+                if (!user || !bcrypt.compareSync(password, user.password)) return next(createError(400, 'Invalid gmail or password'));
+                if (!user.active) return next(createError(400, 'User\'s account has not been activated'));
+
+                const accessToken = jwtUtils.generateToken({ id: user.id, roleId: user.roleId, fullName: user.fullName }, 'access');
+                const refreshToken = jwtUtils.generateToken({ id: user.id, roleId: user.roleId }, 'refresh');
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Login successfully!',
+                    data: { accessToken, refreshToken }
+                });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    ],
+
+    /** Expected Input
+     * 
+     * { gmail } = req.body
+     * 
+     */
+    async resetPassword(req, res, next) {
+        try {
+            const { gmail } = req.body;
+
+            const user = await UserService.getUserByGmail(gmail);
+            if (!user) return next(createError(404, 'User\'s account not found'));
+
+            const password = randomPassword.generate({ length: 10, numbers: true, symbols: true });
+            const hashPassword = await bcrypt.hash(password, SALT_PASSWORD);
+
+            await UserService.updateUser({ id: user.id, password: hashPassword });
+
+            const dataToSend = {
+                type: 'resetpassword',
+                fullName: user.fullName,
+                gender: user.gender,
+                gmail: user.gmail,
+                password
+            }
+            await RabbitMQService.publishNewMail(dataToSend).catch(err => {
+                console.error('Error publishing On User Registed:', err);
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Reset password successfully!',
+                data: {}
+            });
+        } catch (error) {
+            return next(error);
+        }
+    },
+
+
+    /** Expected Input
+     * 
+     * { refreshToken } = req.body
+     * 
+     */
+    refreshToken: [
+        inputChecker.checkBodyRefreshToken,
+        async (req, res, next) => {
+            try {
+                const { refreshToken } = req.body;
+
+                const hashedToken = hashToken(refreshToken);
+
+                // check token in cache
+                const isRevokedToken = await RedisService.getCacheData(hashedToken);
+                if (isRevokedToken) return next(createError(401, 'Token has been revoked!'));
+
+                let decoded;
+                try {
+                    decoded = jwtUtils.decodeToken(refreshToken, 'refresh');
+                } catch (error) {
+                    return next(createError(401, ''));
+                }
+
+                const user = await UserService.getUserById(decoded.id);
+                if (!user) return next(createError(404, 'User\'s account not found'));
+
+                // Calculate the remaining time of the refresh token
+                const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+                const remainingTime = decoded.exp - currentTime;
+
+                // add token in cache
+                await RedisService.saveCacheData({ key: hashedToken, value: true, expireTimeInSeconds: remainingTime });
+
+                const newAccessToken = jwtUtils.generateToken({ id: user.id, roleId: user.roleId, fullName: user.fullName }, 'access');
+                const newRefreshToken = jwtUtils.generateToken({ id: user.id, roleId: user.roleId }, 'refresh', `${remainingTime}s`);
+
+                res.status(201).json({
+                    success: true,
+                    message: 'Get new tokens successfully!',
+                    data: { accessToken: newAccessToken, refreshToken: newRefreshToken }
+                });
+            } catch (error) {
+                return next(error);
+            }
+        }
+    ],
 
     async logout(req, res, next) {
         try {
-            const userId = req.user.id;
-            const token = extractToken(req);
+            // refreshToken require ?
+            const accessToken = jwtUtils.extractToken(req);
+            if (!accessToken) return next(createError(401, 'No AccessToken provided!'));
 
-            await UserService.deleteUserRefreshToken(userId);
+            const hashedToken = hashToken(accessToken);
 
-            RedisService.saveCacheData({
-                key: `${token}`,
-                value: 1,
-                expireTimeInSeconds: 15
-            });
-
-            return res.status(200).json({
-                success: true,
-                msg: 'Logout successfull!',
-                data: {}
-            });
-
-        } catch (error) {
-            next(error);
-        }
-    },
-
-    async verifyAccount(req, res, next) {
-        try {
-            const token = jwt.extractToken(req);
-            if (!token) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Token is missing',
-                    data: {}
-                });
-            }
-
-            let decodedToken;
+            let decoded;
             try {
-                decodedToken = await jwt.decodeToken(token);
-            } catch (err) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid token',
-                    data: {}
-                });
+                decoded = jwtUtils.decodeToken(accessToken, 'access');
+            } catch (error) {
+                return next(createError(401, ''));
             }
 
-            const userId = decodedToken.id;
-            const user = await UserService.getUserById(userId);
-            if (!user) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'User not found!',
-                    data: {}
-                });
-            }
+            // Calculate the remaining time of the refresh token
+            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+            const remainingTime = decoded.exp - currentTime;
 
-            await UserService.updateUser({ id: userId, active: true });
+            // add token in cache
+            await RedisService.saveCacheData({ key: hashedToken, value: true, expireTimeInSeconds: remainingTime });
 
-            return res.status(200).json({
-                success: true,
-                message: 'Account verified successfully!',
-                data: {}
-            });
-        } catch (error) {
-            next(error)
-        }
-    },
-
-    async resetPassword(req, res, next) {
-        try {
-            const { email } = req.body;
-            const userData = await UserService.getUserByEmail(email);
-
-            if (userData) {
-                const newPassword = generatePassword.generate({
-                    length: 10,
-                    numbers: true
-                });
-
-                const hashNewPassword = await bcrypt.hash(newPassword, 10);
-
-                await UserService.updateUser({ email: email, password: hashNewPassword });
-
-                const mailContent = {
-                    type: 'resetpassword',
-                    fullName: userData.fullName,
-                    gender: userData.gender,
-                    email: userData.email,
-                    password: newPassword
-                }
-
-                await sendToQueue('send_email', JSON.stringify(mailContent));
-                return res.status(200).json({
-                    success: true,
-                    msg: 'Reset password successfull!',
-                    data: {}
-                });
-            }
-            else {
-                res.status(404).json({
-                    success: false,
-                    error: 'Email not found!',
-                    data: {}
-                });
-            }
-
-        } catch (error) {
-            next(error);
-        }
-    },
-
-    async refreshToken(req, res, next) {
-        try {
-            const { refreshToken } = req.body;
-            if (!refreshToken) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Refresh token is required!',
-                    data: {}
-                });
-            }
-
-            // user = decode = decode(refreshToken)
-            // user.id 
-            // findById(user.id)
-            // 
-            const user = await UserService.getUserByRefreshToken(refreshToken);
-            if (!user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Invalid refresh token!',
-                    data: {}
-                });
-            }
-
-            //Add token in blacklist
-            await revokedTokens.add(user.refreshToken);
-
-            const accessTokenNew = await jwt.generateAccessToken(user, 'login');
-            const refreshTokenNew = await jwt.generateRefreshToken(user);
-
-            await UserService.updateUser({ id: user.id, refreshToken: refreshTokenNew });
-
-            return res.status(201).json({
-                success: true,
-                message: 'Refresh Token sucessfull!',
-                data: { accessTokenNew: accessTokenNew, refreshTokenNew: refreshTokenNew }
-            });
-        } catch (error) {
-            next(error);
-        }
-    },
-
-    async resendMailActive(req, res, next) {
-        try {
-            const { id } = req.body;
-
-            if (!id) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'User ID is required!',
-                    data: {}
-                });
-            }
-
-            const existingUser = await UserService.getUserById(id);
-
-            if (!existingUser) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'User does not exist!',
-                    data: {}
-                });
-            }
-
-            const token = jwt.generateActiveToken(existingUser.id);
-            const link = `${domain}/active?token=${token}`;
-
-            const mailContent = {
-                type: 'active',
-                fullName: existingUser.fullName,
-                gender: existingUser.gender,
-                email: existingUser.email,
-                phone: existingUser.phone,
-                link: link
-            }
-            await sendToQueue('send_email', JSON.stringify(mailContent));
-            return res.status(200).json({
-                success: true,
-                msg: 'Complete resend email active!',
-                data: {}
-            });
-
-        } catch (error) {
-            next(error);
-        }
-    },
-
-    async changePassword(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { newPassword, confirmnNewPassword } = req.body;
-
-            if (newPassword != confirmnNewPassword) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Confirm password does not match!',
-                    data: {}
-                });
-            }
-
-            const user = await UserService.getUserById(id);
-            console.log(user);
-
-            const newPasswordHashed = await bcrypt.hash(newPassword, 10);
-
-            if (!user) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'User not found!',
-                    data: {}
-                });
-            }
-            await UserService.updateUser({ id: user.id, password: newPasswordHashed });
             res.status(200).json({
                 success: true,
-                message: 'Change password successfull!',
+                message: 'Logout successfully!',
                 data: {}
             });
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
 
-    //CRUD of user
-    async getUser(req, res, next) {
-        try {
-            const { id } = req.params;
-            if (id) {
-                const user = await UserService.getUserById(id);
-                if (user) {
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Get user sucessfull!',
-                        data: user
-                    });
-                } else {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'User not found!',
-                        data: {}
-                    });
-                }
-            } else {
-                const users = await UserService.getAllUsers();
-                return res.status(200).json({
-                    success: true,
-                    message: 'Get all user successfull!',
-                    data: users
-                });
-            }
-        } catch (error) {
-            next(error);
-        }
-    },
+    /** Expected Input
+     * 
+     * { password, confirmPassword } = req.body
+     * 
+     */
+    changePassword: [
+        inputChecker.checkBodyChangePassword,
+        async (req, res, next) => {
+            try {
+                const hashPassword = await bcrypt.hash(req.body.password, SALT_PASSWORD);
 
-    async updateUser(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { roleId, fullName, gender, nationalId, phone, email, password } = req.body;
+                const user = await UserService.updateUser({ id: req.user.id, password: hashPassword });
+                if (!user) return next(createError(404, 'User\'s account not found'));
 
-            const updatedUser = await UserService.updateUser({ id, roleId, fullName, gender, nationalId, phone, email, password: await bcrypt.hash(password, 10) });
-            if (updatedUser) {
                 res.status(200).json({
                     success: true,
-                    message: 'Update user sucessfull!',
-                    data: { id, roleId, fullName, gender, nationalId, phone, email }
+                    message: 'Change password successfully!',
+                    data: { user }
                 });
-            } else {
-                res.status(404).json({
-                    success: false,
-                    error: 'User not found!',
-                    data: {}
-                });
+            } catch (error) {
+                return next(error);
             }
+        }
+    ],
+
+    /** Expected Input
+     * 
+     * userId  = req.params
+     * 
+     */
+    async resendMailActive(req, res, next) {
+        try {
+            const { userId } = req.params;
+
+            const user = await UserService.getUserById(userId);
+            if (!user) return next(createError(404, 'User\'s account not found'));
+            if (user.active) return next(createError(400, 'User\'s account already has been activated'));
+
+            const token = jwtUtils.generateToken({ id: newUser.id }, 'active');
+            const dataToSend = {
+                type: 'active',
+                fullName: user.fullName,
+                gender: user.gender,
+                gmail: user.gmail,
+                phone: user.phone,
+                link: `${API_GATEWAY}/auth/active?token=${token}`
+            }
+            await RabbitMQService.publishNewMail(dataToSend).catch(err => {
+                console.error('Error publishing On User Registed:', err);
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Send active mail successfully!',
+                data: {}
+            });
+
         } catch (error) {
-            next(error);
+            return next(error);
         }
     },
-
-    async deleteUser(req, res, next) {
-        try {
-            const { id } = req.params;
-            const deletedUser = await UserService.deleteUser(id);
-            if (deletedUser) {
-                res.status(200).json({
-                    success: true,
-                    message: 'Delete user sucessfull!',
-                    data: { deletedUser }
-                });
-            } else {
-                res.status(404).json({
-                    success: false,
-                    error: 'User not found!',
-                    data: {}
-                });
-            }
-        } catch (error) {
-            next(error);
-        }
-    }
 };

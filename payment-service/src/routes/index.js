@@ -2,15 +2,19 @@ const express = require('express');
 const router = express.Router();
 
 const { PaymentController, SurchargeController, PaymentSurchargeController } = require('../controllers');
+const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
+
+
+router.use(extractUserFromHeaders);
 
 // Payments CRUD
-router.post('/payments', PaymentController.createPayment);
-router.get('/payments/:paymentId?', PaymentController.getPayments);
-router.put('/payments/:paymentId', PaymentController.updatePayment);
-router.delete('/payments/:paymentId', PaymentController.deletePayment);
+router.post('/payments', authorize(["manager"]), PaymentController.createPayment);
+router.get('/payments/:paymentId?', authorize(["admin", "manager"]), PaymentController.getPayments);
+router.put('/payments/:paymentId', authorize(["admin"]), PaymentController.updatePayment);
+router.delete('/payments/:paymentId', authorize(["admin"]), PaymentController.deletePayment);
 
 // Payments Business Logic
-router.put('/payments/:paymentId/surcharges', PaymentController.updateSurchargeInPayment);
+router.put('/payments/:paymentId/surcharges', authorize(["manager"]), PaymentController.updateSurchargeInPayment);
 
 
 // Surcharges CRUD

@@ -1,61 +1,32 @@
 const jwt = require('jsonwebtoken');
-const secretKey = process.env.JWT_SECRET;
-const secretKeyRefreshToken = process.env.JWT_SECRET_REFRESHTOKEN;
 
-const generateActiveToken = (userID) => {
-    try {
-        const payload = { id: userID };
-        const token = jwt.sign(
-            payload,
-            secretKey,
-            { algorithm: 'HS256', expiresIn: '24h' }
-        );
-
-        return token;
-    } catch (error) {
-        console.error('Error generating JWT:', error.message);
-        throw error;
+const TOKEN = {
+    active: {
+        key: process.env.JWT_SECRETKEY_ACTIVETOKEN,
+        expiresIn: '24h',
+        algorithm: 'HS256'
+    },
+    access: {
+        key: process.env.JWT_SECRETKEY_ACCESSTOKEN,
+        expiresIn: '5m',
+        algorithm: 'HS256'
+    },
+    refresh: {
+        key: process.env.JWT_SECRETKEY_REFRESHTOKEN,
+        expiresIn: '7d',
+        algorithm: 'HS256'
     }
 };
 
-const generateAccessToken = async (user) => {
+const generateToken = (payload, type, time = null) => {
     try {
-        const expiresIn = '5m';
-        const token = await jwt.sign(
-            {
-                id: user.id,
-                roleId: user.roleId,
-                fullName: user.fullName
-            },
-            secretKey,
-            {
-                algorithm: 'HS256',
-                expiresIn: expiresIn
-            }
-        );
-        return token;
-    } catch (error) {
-        console.error('Error generating JWT:', error.message);
-        throw error;
-    }
-};
+        const tokenConfig = TOKEN[type];
+        if (!tokenConfig) throw new Error('Invalid token type');
 
-const generateRefreshToken = async (user) => {
-    try {
-        let expiresIn = '7d'
-
-        const token = await jwt.sign(
-            {
-                id: user.id,
-                roleId: user.roleId
-            },
-            secretKeyRefreshToken,
-            {
-                algorithm: 'HS256',
-                expiresIn: expiresIn
-            }
-        );
-        return token;
+        const { key: secretKey, algorithm } = tokenConfig;
+        const expiresIn = time || tokenConfig.expiresIn;
+        
+        return jwt.sign(payload, secretKey, { algorithm, expiresIn });
     } catch (error) {
         console.error('Error generating JWT:', error.message);
         throw error;
@@ -73,13 +44,16 @@ const extractToken = (req) => {
     return null;
 };
 
-const decodeToken = async (token) => {
+const decodeToken = (token, type) => {
     try {
-        return await jwt.verify(token, secretKey);
+        const tokenConfig = TOKEN[type];
+        if (!tokenConfig) throw new Error('Invalid token type');
+        const { key: secretKey } = tokenConfig;
+        return jwt.verify(token, secretKey);
     } catch (error) {
         console.error('Error decoding token:', error.message);
         throw error;
     }
 };
 
-module.exports = { generateActiveToken, generateAccessToken, generateRefreshToken, extractToken, decodeToken };
+module.exports = { generateToken, extractToken, decodeToken };

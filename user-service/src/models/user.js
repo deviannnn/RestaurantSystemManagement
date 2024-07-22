@@ -22,10 +22,9 @@ module.exports = (sequelize, DataTypes) => {
     gender: { type: DataTypes.BOOLEAN, allowNull: false },
     nationalId: { type: DataTypes.STRING, allowNull: false, unique: false },
     phone: { type: DataTypes.STRING, allowNull: false, unique: false },
-    email: { type: DataTypes.STRING, allowNull: false, unique: false },
+    gmail: { type: DataTypes.STRING, allowNull: false, unique: false },
     password: { type: DataTypes.STRING, allowNull: false },
-    active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-    refreshToken: { type: DataTypes.STRING, allowNull: true }
+    active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
   }, {
     sequelize,
     modelName: 'User',

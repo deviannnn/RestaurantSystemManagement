@@ -3,30 +3,34 @@ const router = express.Router();
 
 const RoleController = require('../controllers/role-controller');
 const UserController = require('../controllers/user-controller');
+const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
 
-const auth = require('../middlewares/auth');
 
-router.get('/auth/active', UserController.verifyAccount);
+// Users Business Logic
+router.get('/auth/active', UserController.activateAccount);
 router.post('/auth/login', UserController.login);
+router.post('/auth/reset-password', UserController.resetPassword);
+router.post('/auth/refresh-token', UserController.refreshToken);
 
+router.use(extractUserFromHeaders);
 
-//CRUD users
-router.post('/users/register', UserController.register);
-router.get('/users/:id?', UserController.getUser);
-router.put('/users/:id', UserController.updateUser);
-router.delete('/users/:id', UserController.deleteUser);
-
-router.post('/users/register', UserController.register);
-router.post('/users/refresh-token', UserController.refreshToken);
-router.post('/users/resetpassword', UserController.resetPassword);
-router.post('/users/:id/changepassword', UserController.changePassword);
 router.post('/users/logout', UserController.logout);
-router.post('/users/resend-mail-active', UserController.resendMailActive);
+router.post('/users/change-password', UserController.changePassword);
+router.post('/users/:userId/mail-active', authorize(["admin", "manager"]), UserController.resendMailActive);
 
-//CRUD role
-router.post('/roles', RoleController.createRole);
-router.get('/roles/:roleId?', RoleController.getRoles);
-router.put('/roles/:roleId', RoleController.updateRole);
-router.delete('/roles/:roleId', RoleController.deleteRole);
+
+// CRUD users
+router.post('/users/register', authorize(["admin", "manager"]), UserController.register);
+router.get('/users/:userId?', authorize(["admin", "manager"]), UserController.getUsers);
+router.put('/users/:userId', authorize(["admin"]), UserController.updateUser);
+router.delete('/users/:userId', authorize(["admin"]), UserController.deleteUser);
+
+
+// CRUD role
+router.post('/roles', authorize(["admin"]), RoleController.createRole);
+router.get('/roles/:roleId?', authorize(["admin"]), RoleController.getRoles);
+router.put('/roles/:roleId', authorize(["admin"]), RoleController.updateRole);
+router.delete('/roles/:roleId', authorize(["admin"]), RoleController.deleteRole);
+
 
 module.exports = router;

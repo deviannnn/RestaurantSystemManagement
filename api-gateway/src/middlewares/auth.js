@@ -6,31 +6,20 @@ const Redis = require('../services/redis-service');
 const checkRevokedToken = async (req, res, next) => {
     try {
         const token = extractToken(req);
-
-        if (!token) {
-            return next(createError(401, 'No token provided!'));
-        }
-
-        const revokedToken = await Redis.getCacheData(`${token}`);
-
-        if (revokedToken && revokedToken == 1) {
-            return next(createError(401, 'Token has been revoked!'));
-        }
-        next();
+        if (!token) return next(createError(401, 'No token provided!'));
+        const isRevokedToken = await Redis.getCacheData(`${token}`);
+        if (isRevokedToken) return next(createError(401, 'Token has been revoked!'));
+        return next();
     } catch (error) {
         return next(createError(401, ''));
     }
 };
 
-const verifyToken = async (req, res, next) => {
+const verifyToken = (req, res, next) => {
     const token = extractToken(req);
-
-    if (!token) {
-        return next(createError(401, 'No token provided!'));
-    }
-
+    if (!token) return next(createError(401, 'No token provided!'));
     try {
-        const decoded = await decodeToken(token);
+        const decoded = decodeToken(token);
         req.user = decoded;
         return next();
     } catch (error) {

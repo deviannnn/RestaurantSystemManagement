@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 const { OrderController, OrderItemController } = require('../controllers');
-const { authorize } = require('../middlewares/auth');
+const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
 
+
+router.use(extractUserFromHeaders);
 
 // Orders CRUD
 router.post('/orders', authorize(["manager", "staff"]), OrderController.createOrder);
