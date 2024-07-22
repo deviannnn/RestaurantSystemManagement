@@ -18,46 +18,28 @@ const Redis = require('./config/redis');
   }
 });
 
-// Create an instance of Express app
 const app = express();
 
-// Middleware setup
 app.use(cors()); // Enable CORS
 app.use(helmet()); // Add security headers
 app.use(morgan("combined")); // Log HTTP requests
 app.disable("x-powered-by"); // Hide Express server information
 
-// Define routes and corresponding microservices
-const services = [
-  { route: "/categories", target: "http://localhost:5001/categories" },
-  { route: "/items", target: "http://localhost:5001/items" },
-  { route: "/orders", target: "http://localhost:5004/orders" },
-  { route: "/orders-items", target: "http://localhost:5004/orders-items" },
-  { route: "/payments", target: "http://localhost:5005/payments" },
-  { route: "/surcharges", target: "http://localhost:5005/surcharges" },
-  { route: "/payments-surcharges", target: "http://localhost:5005/payments-surcharges" },
-  { route: "/tables", target: "http://localhost:5006/tables" },
-  { route: "/auth", target: "http://localhost:5007/auth" },
-  { route: "/users", target: "http://localhost:5007/users" },
-  { route: "/roles", target: "http://localhost:5007/roles" }
-];
 
-// Middleware function for verify JWT
-const { checkRevokedToken, verifyToken } = require('./middlewares/auth');
+const { checkRevokedToken, verifyToken } = require('./middlewares/auth'); // Middleware function for verify JWT
 
-// Middleware function for rate limiting and timeout handling
-const { limiter } = require('./middlewares/limiter');
 
-// Apply the rate limit and timeout middleware to the proxy
-app.use(limiter);
+const { limiter } = require('./middlewares/limiter'); // Middleware function for rate limiting and timeout handling
+app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
 
-// Set up proxy middleware for each microservice
-services.forEach(({ route, target }) => {
+
+const services = require('./config/microservices-routes'); // Define routes and corresponding microservices
+services.forEach(({ route, target }) => { // Set up proxy middleware for each microservice
   // Proxy options
   const proxyOptions = {
     target,
     changeOrigin: true,
-    pathRewrite: { [`^${route}`]: "" },
+    pathRewrite: { [`/api^${route}`]: "" },
     on: {
       proxyReq: (proxyReq, req, res) => {
         req.setTimeout(15000); // Đặt timeout cho yêu cầu là 15 giây
@@ -67,20 +49,25 @@ services.forEach(({ route, target }) => {
         }
       },
       proxyRes: (proxyRes, req, res) => { },
-      error: (err, req, res) => {
-        console.error('Proxy error:', err);
-      },
+      error: (err, req, res) => { console.error('Proxy error:', err); },
     }
   };
 
   if (route === '/auth') {
     // Route /auth without authentication middleware
-    app.use(route, createProxyMiddleware(proxyOptions));
+    app.use(`/api${route}`, createProxyMiddleware(proxyOptions));
   } else {
     // Apply authentication middleware for all other routes
-    app.use(route, checkRevokedToken, verifyToken, createProxyMiddleware(proxyOptions));
+    app.use(`/api${route}`, checkRevokedToken, verifyToken, createProxyMiddleware(proxyOptions));
   }
 });
+
+// WebSocket handling
+app.use('/api/ws', createProxyMiddleware({
+  target: 'ws://localhost:5002',
+  changeOrigin: true,
+  ws: true, // Enable WebSocket proxying
+}));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) { next(createError(404)); });
