@@ -14,24 +14,24 @@ const Redis = require('./config/redis');
 (async () => {
     try {
         await Redis.connect();
-        console.log('Redis is connected');
+        console.log(`Redis connection established on [${Redis.redisUrl}]`);
     } catch (error) {
         console.error('Failed to connect to Redis:', error);
         process.exit(1);
     }
-});
+})();
 
 // Connect to rabbitmq
 const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();
-        console.log('RabbitMQ is connected');
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('Failed to connect to RabbitMQ:', error);
         process.exit(1);
     }
-});
+})();
 
 const app = express();
 

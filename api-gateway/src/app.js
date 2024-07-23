@@ -12,14 +12,14 @@ const services = require('./config/microservices-routes'); // Define routes and 
 // Connect to redis
 const Redis = require('./config/redis');
 (async () => {
-  try {
-    await Redis.connect();
-    console.log('Redis is connected');
-  } catch (error) {
-    console.error('Failed to connect to Redis:', error);
-    process.exit(1);
-  }
-});
+    try {
+        await Redis.connect();
+        console.log(`Redis connection established on [${Redis.redisUrl}]`);
+    } catch (error) {
+        console.error('Failed to connect to Redis:', error);
+        process.exit(1);
+    }
+})();
 
 const app = express();
 

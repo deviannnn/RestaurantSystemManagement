@@ -27,6 +27,8 @@ const RabbitMQ = require('./config/rabbitmq');
 
             MailService.sendEmail(mailComposer);
         });
+
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('Failed to set up RabbitMQ subscriber:', error);
         process.exit(1);

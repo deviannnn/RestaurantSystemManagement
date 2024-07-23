@@ -1,8 +1,25 @@
+require('dotenv').config();
 const amqp = require('amqplib');
+const env = process.env.NODE_ENV || 'development';
+const config = {
+    development: {
+        username: process.env.DEV_RABBITMQ_USERNAME,
+        password: process.env.DEV_RABBITMQ_PASSWORD,
+        host: process.env.DEV_RABBITMQ_HOST,
+        port: process.env.DEV_RABBITMQ_PORT
+    },
+    production: {
+        username: process.env.PROD_RABBITMQ_USERNAME,
+        password: process.env.PROD_RABBITMQ_PASSWORD,
+        host: process.env.PROD_RABBITMQ_HOSTNAME,
+        port: process.env.PROD_RABBITMQ_PORT
+    }
+}[env];
 
 class RabbitMQ {
     constructor() {
-        this.rabbitmqUrl = 'amqp://admin:admin@localhost:5672';
+        const { username, password, host, port } = config;
+        this.rabbitmqUrl = `amqp://${username}:${password}@${host}:${port}`;
         this.connection = null;
         this.channel = null;
     }

@@ -1,8 +1,36 @@
 version: '3.8'
 
+networks:
+  restaurant_network:
+    driver: overlay
+
 services:
-  order-db-mysql:
-    image: mysql:8.4.0
+  viz:
+    image: dockersamples/visualizer
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  catalog_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_catalog
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - catalog-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
+
+  order_mysql:
+    image: mysql:9
     restart: always
     environment:
       - MYSQL_DATABASE=restaurant_system_order
@@ -11,14 +39,197 @@ services:
       - "3308:3306"
     volumes:
       - order-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
 
-  backend:
+  payment_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_payment
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3309:3306"
+    volumes:
+      - payment-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
+
+  table_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_table
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3310:3306"
+    volumes:
+      - table-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
+
+  user_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_user
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3311:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
+
+  redis:
+    image: redis:7.2.5-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/var/lib/redis
+    networks:
+      - restaurant_network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "15672:15672" # Management UI port
+      - "5672:5672" # AMQP port
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - restaurant_network
+  
+  catalog_service:
+    image: deviannnn/restaurant:catalog
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_catalog
+      - PROD_DB_HOSTNAME=catalog_mysql
+      - PROD_REDIS_HOST=redis
+    ports:
+      - "5001:5000"
+    networks:
+      - restaurant_network
+
+  kitchen_service:
+    image: deviannnn/restaurant:kitchen
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+    ports:
+      - "5002:5000"
+    networks:
+      - restaurant_network
+
+  mail_service:
+    image: deviannnn/restaurant:mail
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+    ports:
+      - "5003:5000"
+    networks:
+      - restaurant_network
+
+  order_service:
     image: deviannnn/restaurant:order
     restart: unless-stopped
     environment:
-      - DEV_DB_HOSTNAME=host.docker.internal
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_order
+      - PROD_DB_HOSTNAME=order_mysql
     ports:
-      - "5000:5002"
+      - "5004:5000"
+    networks:
+      - restaurant_network
+
+  payment_service:
+    image: deviannnn/restaurant:payment
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_payment
+      - PROD_DB_HOSTNAME=payment_mysql
+    ports:
+      - "5005:5000"
+    networks:
+      - restaurant_network
+
+  table_service:
+    image: deviannnn/restaurant:table
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_table
+      - PROD_DB_HOSTNAME=table_mysql
+    ports:
+      - "5006:5000"
+    networks:
+      - restaurant_network
+
+  user_service:
+    image: deviannnn/restaurant:user
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_user
+      - PROD_DB_HOSTNAME=user_mysql
+      - PROD_REDIS_HOST=redis
+    ports:
+      - "5007:5000"
+    networks:
+      - restaurant_network
+
+
+  waiter_service:
+    image: deviannnn/restaurant:waiter
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq
+    ports:
+      - "5008:5000"
+    networks:
+      - restaurant_network
 
 volumes:
+  catalog-db-data:
   order-db-data:
+  payment-db-data:
+  table-db-data: 
+  user-db-data:
+  rabbitmq-data:
+  redis-data:

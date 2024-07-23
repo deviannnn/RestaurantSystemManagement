@@ -14,12 +14,12 @@ const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();
-        console.log('RabbitMQ is connected');
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('Failed to connect to RabbitMQ:', error);
         process.exit(1);
     }
-});
+})();
 
 const app = express();
 

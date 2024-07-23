@@ -37,6 +37,8 @@ const RabbitMQ = require('./config/rabbitmq');
                 console.error('Error updating table status for table open-close:', error);
             }
         });
+        
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('Failed to set up RabbitMQ subscriber:', error);
         process.exit(1);

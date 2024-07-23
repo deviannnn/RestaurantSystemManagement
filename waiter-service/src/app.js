@@ -41,9 +41,11 @@ const RabbitMQ = require('./config/rabbitmq');
                 }
             });
         });
+
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('Failed to set up RabbitMQ subscriber:', error);
-        process.exit(1); // Exit the process with error
+        process.exit(1);
     }
 })();
 

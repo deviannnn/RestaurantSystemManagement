@@ -1,8 +1,21 @@
+require('dotenv').config();
 const redis = require('redis');
+const env = process.env.NODE_ENV || 'development';
+const config = {
+    development: {
+        host: process.env.DEV_REDIS_HOST,
+        port: process.env.DEV_REDIS_PORT
+    },
+    production: {
+        host: process.env.PROD_REDIS_HOST,
+        port: process.env.PROD_REDIS_PORT
+    }
+}[env];
 
-class RedisConnection {
+class Redis {
     constructor() {
-        this.redisUrl = 'redis://localhost:6379';
+        const { host, port } = config;
+        this.redisUrl = `redis://${host}:${port}`;
         this.client = null;
     }
 
@@ -71,4 +84,4 @@ class RedisConnection {
     }
 }
 
-module.exports = new RedisConnection();
+module.exports = new Redis();

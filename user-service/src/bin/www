@@ -8,12 +8,13 @@ var app = require('../app');
 var debug = require('debug')('restaurantsystemmanagement:server');
 var http = require('http');
 const RabbitMQ = require('../config/rabbitmq');
+const Redis = require('../config/redis');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5005');
+var port = normalizePort(process.env.PORT || '5000');
 app.set('port', port);
 
 /**
@@ -36,11 +37,13 @@ server.on('listening', onListening);
 
 process.on('SIGINT', async () => {
   await RabbitMQ.disconnect();
+  await Redis.disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   await RabbitMQ.disconnect();
+  await Redis.disconnect();
   process.exit(0);
 });
 
