@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 const TableController = require('../controllers/table-controller');
-const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
+const { authenticate, authorize } = require('../middlewares/auth');
 
 
-router.use(extractUserFromHeaders);
+router.use(authenticate);
 
 // Tables CRUD
 router.post('/tables', TableController.createTable);

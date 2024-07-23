@@ -149,12 +149,13 @@ module.exports = {
                 return next(createError(401, ''));
             }
 
-            const activatedUser = await UserService.updateUser({ id: decoded.id, active: true });
-            if (!activatedUser) return next(createError(404, 'User\'s account not found'));
+            const user = await UserService.getUserById(decoded.id);
+            if (!user) return next(createError(404, 'User\'s account not found'));
+            if (!user.active) await UserService.updateUser({ id: user.id, active: true });
 
             return res.status(200).json({
                 success: true,
-                message: 'Activate User\'s account successfully!',
+                message: 'User\'s account is already activated!',
                 data: {}
             });
         } catch (error) {
@@ -280,24 +281,12 @@ module.exports = {
 
     async logout(req, res, next) {
         try {
-            // refreshToken require ?
-            const accessToken = jwtUtils.extractToken(req);
-            if (!accessToken) return next(createError(401, 'No AccessToken provided!'));
-
-            const hashedToken = hashToken(accessToken);
-
-            let decoded;
-            try {
-                decoded = jwtUtils.decodeToken(accessToken, 'access');
-            } catch (error) {
-                return next(createError(401, ''));
-            }
-
             // Calculate the remaining time of the refresh token
             const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-            const remainingTime = decoded.exp - currentTime;
+            const remainingTime = req.user.exp - currentTime;
 
             // add token in cache
+            const hashedToken = hashToken(jwtUtils.extractToken(req));
             await RedisService.saveCacheData({ key: hashedToken, value: true, expireTimeInSeconds: remainingTime });
 
             res.status(200).json({

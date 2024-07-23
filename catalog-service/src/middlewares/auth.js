@@ -1,12 +1,19 @@
 const createError = require('http-errors');
+const { extractToken, decodeToken } = require('../utils/jwt');
 
 const rolesMap = { "admin": 1, "manager": 2, "chef": 3, "staff": 4 }
 
-const extractUserFromHeaders = (req, res, next) => {
-    if (!req.headers['x-user']) return next(createError(401, ''));
-    req.user = JSON.parse(req.headers['x-user']);
-    return next();
-};
+const authenticate = (req, res, next) => {
+    const token = extractToken(req);
+    if (!token) return next(createError(401, 'No token provided!'));
+    try {
+        const decoded = decodeToken(token);
+        req.user = decoded;
+        return next();
+    } catch (error) {
+        return next(createError(401, ''));
+    }
+}
 
 const authorize = (roles) => {
     return (req, res, next) => {
@@ -17,4 +24,4 @@ const authorize = (roles) => {
     };
 };
 
-module.exports = { extractUserFromHeaders, authorize };
+module.exports = { authenticate, authorize };

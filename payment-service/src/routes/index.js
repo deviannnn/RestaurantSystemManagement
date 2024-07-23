@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 const { PaymentController, SurchargeController, PaymentSurchargeController } = require('../controllers');
-const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
+const { authenticate, authorize } = require('../middlewares/auth');
 
 
-router.use(extractUserFromHeaders);
+router.use(authenticate);
 
 // Payments CRUD
 router.post('/payments', authorize(["manager"]), PaymentController.createPayment);
