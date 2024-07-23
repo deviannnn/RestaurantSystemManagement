@@ -14,7 +14,7 @@ async function handleItemSearch(req, res, next, active) {
         const nameQuery = req.query.name;
         if (!nameQuery) return next(createError(400, 'Invalid input', { data: { field: 'query.name', value: nameQuery, detail: 'Name query parameter is required' } }));
 
-        const searchedItem = await searchItemsByName(nameQuery, active);
+        const searchedItem = await ItemService.searchItemByName(nameQuery, active);
         if (!searchedItem || searchedItem.length === 0) return next(createError(404, 'No items found with this name'));
 
         return res.status(200).json({
@@ -199,7 +199,7 @@ module.exports = {
      * 
      */
     async getCatalogItemsSearch(req, res, next) {
-        return handleItemSearch(req, res, next, true);
+        return await handleItemSearch(req, res, next, true);
     },
 
     /** Expected Input

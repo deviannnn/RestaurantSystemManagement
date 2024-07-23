@@ -16,13 +16,13 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.consumeQueue('send-mail', (mailData) => {
             console.log('\nReceived mail:', mailData);
 
-            const { type, fullName, gender, email, password, phone, link } = mailData;
+            const { type, fullName, gender, gmail, password, link } = mailData;
             
             let mailComposer;
             if (type === 'active') {
-                mailComposer = MailService.composeActiveMail(fullName, gender, email, phone, link);
+                mailComposer = MailService.composeActiveMail(fullName, gender, gmail, password, link);
             } else if (type === 'resetpassword') {
-                mailComposer = MailService.composeResetPasswordMail(fullName, gender, email, password);
+                mailComposer = MailService.composeResetPasswordMail(fullName, gender, gmail, password);
             }
 
             MailService.sendEmail(mailComposer);

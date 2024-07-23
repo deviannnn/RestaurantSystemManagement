@@ -8,7 +8,7 @@ const TOKEN = {
     },
     access: {
         key: process.env.JWT_SECRETKEY_ACCESSTOKEN,
-        expiresIn: '5m',
+        expiresIn: '2h',
         algorithm: 'HS256'
     },
     refresh: {

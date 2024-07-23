@@ -29,9 +29,9 @@ router.post('/items/batch', ItemController.batchValidator);
 // Catalog Business Logic
 router.get('/catalogs', CategoryController.getFullCatalog);
 router.get('/catalogs/categories/:categoryId', CategoryController.getFullCatalogByCategory);
+router.get('/catalogs/items/search', ItemController.getCatalogItemsSearch);
 router.get('/catalogs/items', ItemController.getFullCatalogWithItems);
 router.get('/catalogs/items/:itemId', ItemController.getCatalogByItem);
-router.get('/catalogs/items/search', ItemController.getCatalogItemsSearch);
 
 
 module.exports = router;
