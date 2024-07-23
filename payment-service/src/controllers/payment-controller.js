@@ -24,7 +24,7 @@ function calculateSurchargeAmounts(surcharges, subAmount) {
 module.exports = {
     /** Expected Input
     * 
-    * { userId, orderId, surchargeIds, totalDiscount, note } = req.body;
+    * { orderId, surchargeIds, totalDiscount, note } = req.body;
     * (surchargeIds is list of surcharge_id)
     * 
     */
@@ -36,7 +36,8 @@ module.exports = {
         inputChecker.checkBodySurchargeIds,
         async (req, res, next) => {
             try {
-                const { userId, orderId, totalDiscount = 0, note } = req.body;
+                const userId = req.user.id;
+                const { orderId, totalDiscount = 0, note } = req.body;
                 const subAmount = req.order.subAmount;
                 const surcharges = req.surcharges;
 

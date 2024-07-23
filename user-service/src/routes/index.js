@@ -3,7 +3,7 @@ const router = express.Router();
 
 const RoleController = require('../controllers/role-controller');
 const UserController = require('../controllers/user-controller');
-const { extractUserFromHeaders, authorize } = require('../middlewares/auth');
+const { authenticate, authorize } = require('../middlewares/auth');
 
 
 // Users Business Logic
@@ -12,7 +12,7 @@ router.post('/auth/login', UserController.login);
 router.post('/auth/reset-password', UserController.resetPassword);
 router.post('/auth/refresh-token', UserController.refreshToken);
 
-router.use(extractUserFromHeaders);
+router.use(authenticate);
 
 router.post('/users/logout', UserController.logout);
 router.post('/users/change-password', UserController.changePassword);

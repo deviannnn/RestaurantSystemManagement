@@ -122,7 +122,7 @@ module.exports = {
         async (req, res, next) => {
             try {
                 const tableId = req.table.id;
-                const { userId } = req.body;
+                const userId = req.user.id;
 
                 const newOrder = await OrderService.createOrder(tableId, userId);
 

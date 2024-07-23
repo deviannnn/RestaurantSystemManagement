@@ -5,6 +5,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const { limiter } = require('./middlewares/limiter'); // Middleware function for rate limiting and timeout handling
+const { checkRevokedToken, authenticate } = require('./middlewares/auth'); // Middleware function for verify JWT
+const services = require('./config/microservices-routes'); // Define routes and corresponding microservices
 
 // Connect to redis
 const Redis = require('./config/redis');
@@ -24,41 +27,26 @@ app.use(cors()); // Enable CORS
 app.use(helmet()); // Add security headers
 app.use(morgan("combined")); // Log HTTP requests
 app.disable("x-powered-by"); // Hide Express server information
-
-
-const { checkRevokedToken, verifyToken } = require('./middlewares/auth'); // Middleware function for verify JWT
-
-
-const { limiter } = require('./middlewares/limiter'); // Middleware function for rate limiting and timeout handling
 app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
 
-
-const services = require('./config/microservices-routes'); // Define routes and corresponding microservices
-services.forEach(({ route, target }) => { // Set up proxy middleware for each microservice
-  // Proxy options
+// Set up proxy middleware for each microservice
+services.forEach(({ route, target }) => { 
   const proxyOptions = {
     target,
     changeOrigin: true,
     pathRewrite: { [`/api^${route}`]: "" },
     on: {
-      proxyReq: (proxyReq, req, res) => {
-        req.setTimeout(15000); // Đặt timeout cho yêu cầu là 15 giây
-        if (req.user) {
-          proxyReq.user = req.user;
-          proxyReq.setHeader('x-user', JSON.stringify(req.user)); // Thêm thông tin user vào header nếu có
-        }
+      error: (err, req, res) => {
+        console.error('Proxy error:', err);
+        res.status(500).json({ message: 'Proxy error', error: err.message });
       },
-      proxyRes: (proxyRes, req, res) => { },
-      error: (err, req, res) => { console.error('Proxy error:', err); },
     }
   };
 
   if (route === '/auth') {
-    // Route /auth without authentication middleware
     app.use(`/api${route}`, createProxyMiddleware(proxyOptions));
   } else {
-    // Apply authentication middleware for all other routes
-    app.use(`/api${route}`, checkRevokedToken, verifyToken, createProxyMiddleware(proxyOptions));
+    app.use(`/api${route}`, checkRevokedToken, authenticate, createProxyMiddleware(proxyOptions));
   }
 });
 
