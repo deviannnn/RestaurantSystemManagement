@@ -12,13 +12,13 @@ const services = require('./config/microservices-routes'); // Define routes and 
 // Connect to redis
 const Redis = require('./config/redis');
 (async () => {
-    try {
-        await Redis.connect();
-        console.log(`Redis connection established on [${Redis.redisUrl}]`);
-    } catch (error) {
-        console.error('Failed to connect to Redis:', error);
-        process.exit(1);
-    }
+  try {
+    await Redis.connect();
+    console.log(`Redis connection established on [${Redis.redisUrl}]`);
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error);
+    process.exit(1);
+  }
 })();
 
 const app = express();
@@ -30,7 +30,7 @@ app.disable("x-powered-by"); // Hide Express server information
 app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
 
 // Set up proxy middleware for each microservice
-services.forEach(({ route, target }) => { 
+services.forEach(({ route, target }) => {
   const proxyOptions = {
     target,
     changeOrigin: true,
@@ -51,8 +51,15 @@ services.forEach(({ route, target }) => {
 });
 
 // WebSocket handling
-app.use('/api/ws', createProxyMiddleware({
-  target: 'ws://localhost:5002',
+app.use('/api/ws/kitchen', createProxyMiddleware({
+  target: `ws://${process.env.KITCHEN_SERVICE}`,
+  changeOrigin: true,
+  ws: true, // Enable WebSocket proxying
+}));
+
+// WebSocket handling
+app.use('/api/ws/waiter', createProxyMiddleware({
+  target: `ws://${process.env.WAITER_SERVICE}`,
   changeOrigin: true,
   ws: true, // Enable WebSocket proxying
 }));

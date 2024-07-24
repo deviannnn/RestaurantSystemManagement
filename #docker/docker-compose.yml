@@ -103,7 +103,7 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - restaurant_network
-  
+
   catalog_service:
     image: deviannnn/restaurant:catalog
     restart: unless-stopped
@@ -114,8 +114,6 @@ services:
       - PROD_DB_NAME=restaurant_system_catalog
       - PROD_DB_HOSTNAME=catalog_mysql
       - PROD_REDIS_HOST=redis
-    ports:
-      - "5001:5000"
     networks:
       - restaurant_network
 
@@ -127,8 +125,6 @@ services:
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq
-    ports:
-      - "5002:5000"
     networks:
       - restaurant_network
 
@@ -140,8 +136,6 @@ services:
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq
-    ports:
-      - "5003:5000"
     networks:
       - restaurant_network
 
@@ -157,8 +151,7 @@ services:
       - PROD_DB_PASSWORD=123456
       - PROD_DB_NAME=restaurant_system_order
       - PROD_DB_HOSTNAME=order_mysql
-    ports:
-      - "5004:5000"
+      - API_GATEWAY_HOSTNAME=api_gateway
     networks:
       - restaurant_network
 
@@ -171,8 +164,6 @@ services:
       - PROD_DB_PASSWORD=123456
       - PROD_DB_NAME=restaurant_system_payment
       - PROD_DB_HOSTNAME=payment_mysql
-    ports:
-      - "5005:5000"
     networks:
       - restaurant_network
 
@@ -188,8 +179,6 @@ services:
       - PROD_DB_PASSWORD=123456
       - PROD_DB_NAME=restaurant_system_table
       - PROD_DB_HOSTNAME=table_mysql
-    ports:
-      - "5006:5000"
     networks:
       - restaurant_network
 
@@ -206,11 +195,9 @@ services:
       - PROD_DB_NAME=restaurant_system_user
       - PROD_DB_HOSTNAME=user_mysql
       - PROD_REDIS_HOST=redis
-    ports:
-      - "5007:5000"
+      - API_GATEWAY_HOSTNAME=api_gateway
     networks:
       - restaurant_network
-
 
   waiter_service:
     image: deviannnn/restaurant:waiter
@@ -220,8 +207,24 @@ services:
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq
+    networks:
+      - restaurant_network
+
+  api_gateway:
+    image: deviannnn/restaurant:api-gateway
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - CATALOG_SERVICE=catalog_service
+      - KITCHEN_SERVICE=kitchen_service
+      - MAIL_SERVICE=mail_service
+      - ORDER_SERVICE=order_service
+      - PAYMENT_SERVICE=payment_service
+      - TABLE_SERVICE=table_service
+      - USER_SERVICE=user_service
+      - WAITER_SERVICE=waiter_service
     ports:
-      - "5008:5000"
+      - "5000:5000"
     networks:
       - restaurant_network
 
@@ -229,7 +232,7 @@ volumes:
   catalog-db-data:
   order-db-data:
   payment-db-data:
-  table-db-data: 
+  table-db-data:
   user-db-data:
   rabbitmq-data:
   redis-data:

@@ -1,0 +1,88 @@
+version: '3.8'
+
+networks:
+  restaurant_network:
+    driver: overlay
+
+services:
+  viz:
+    image: dockersamples/visualizer
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - restaurant_network
+
+  user_mysql:
+    image: mysql:9
+    restart: always
+    environment:
+      - MYSQL_DATABASE=restaurant_system_user
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3311:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - restaurant_network
+
+  rabbitmq_service:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - restaurant_network
+
+  redis_service:
+    image: redis:7.2.5-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/var/lib/redis
+    networks:
+      - restaurant_network
+
+  user_service:
+    image: deviannnn/restaurant:user
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_user
+      - PROD_DB_HOSTNAME=user_mysql
+      - PROD_REDIS_HOST=redis_service
+      - API_GATEWAY_HOSTNAME=api_gateway
+    networks:
+      - restaurant_network
+
+  api_gateway:
+    image: deviannnn/restaurant:api-gateway
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - USER_SERVICE=user_service
+      - PROD_REDIS_HOST=redis_service
+    ports:
+      - "5000:5000"
+    networks:
+      - restaurant_network
+
+volumes:
+  user-db-data:
+  rabbitmq-data:
+  redis-data:

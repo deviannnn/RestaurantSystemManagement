@@ -6,12 +6,20 @@ docker service create --name order_service --publish 5002:5002/tcp --env DEV_DB_
 docker network inspect order_network
 
 
+# ubuntu
+
+sudo apt update
+
+sudo apt install -y docker.io
+
+
 # build 
 docker build -t deviannnn/restaurant:user .
 docker push deviannnn/restaurant:user
 
+
 # stack deploy
-docker swarm init
+docker swarm init --advertise-addr 
 
 docker stack deploy -c docker-compose.yml restaurant_stack
 
@@ -28,3 +36,9 @@ npx sequelize-cli db:migrate:undo:all
 npx sequelize-cli db:seed:all
 
 npx sequelize-cli db:seed:undo:all
+
+docker service logs -f 
+
+docker stack deploy -c tiny.yml
+
+docker stack rm restaurant_stack

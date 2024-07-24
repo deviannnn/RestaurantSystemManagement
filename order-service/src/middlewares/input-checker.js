@@ -3,7 +3,7 @@ const createError = require('http-errors');
 const { check } = require('express-validator');
 const validator = require('./vaildator');
 
-const API_GATEWAY = 'http://localhost:5000';
+const API_GATEWAY = process.env.API_GATEWAY_HOSTNAME || 'http://localhost:5000';
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
 

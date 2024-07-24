@@ -9,7 +9,7 @@ const inputChecker = require('../middlewares/input-checker');
 const { UserService, RabbitMQService, RedisService } = require('../services');
 
 const SALT_PASSWORD = 10;
-const API_GATEWAY = 'http://localhost:5000';
+const API_GATEWAY = process.env.API_GATEWAY_HOSTNAME || 'http://localhost:5000';
 
 const hashToken = (token) => {
     return crypto.createHash('sha256').update(token).digest('hex');
