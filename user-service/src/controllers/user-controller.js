@@ -35,7 +35,7 @@ module.exports = {
                 const newUser = await UserService.createUser({ roleId, fullName, gender, nationalId, phone, gmail, password: hashPassword });
 
                 const token = jwtUtils.generateToken({ id: newUser.id }, 'active');
-                const link = `${API_GATEWAY}/auth/active?token=${token}`;
+                const link = `${API_GATEWAY}/api/auth/active?token=${token}`;
 
                 const dataToSend = { type: 'active', fullName, gender, gmail, password, link }
                 await RabbitMQService.publishNewMail(dataToSend).catch(err => {

@@ -6,7 +6,7 @@ module.exports = {
      * { orderId, itemId, quantity, price, amount, note, status, active } = req.body;
      * 
      */
-    async createOrderItem(req, res) {
+    async createOrderItem(req, res, next) {
         try {
             const { orderId, itemId, quantity, price, amount, note, status, active } = req.body;
             const newOrderItem = await OrderItemService.createOrderItem(orderId, itemId, quantity, price, amount, note, status, active);
@@ -25,7 +25,7 @@ module.exports = {
      * orderItemId ? = req.params
      * 
      */
-    async getOrderItems(req, res) {
+    async getOrderItems(req, res, next) {
         try {
             const { orderItemId } = req.params;
             if (orderItemId) {
@@ -55,7 +55,7 @@ module.exports = {
      * { orderId, itemId, quantity, price, amount, note, status, active } = req.body
      * 
      */
-    async updateOrderItem(req, res) {
+    async updateOrderItem(req, res, next) {
         try {
             const { orderItemId } = req.params;
             const { orderId, itemId, quantity, price, amount, note, status, active } = req.body;
@@ -78,7 +78,7 @@ module.exports = {
      * orderItemId = req.params
      * 
      */
-    async deleteOrderItem(req, res) {
+    async deleteOrderItem(req, res, next) {
         try {
             const { orderItemId } = req.params;
 

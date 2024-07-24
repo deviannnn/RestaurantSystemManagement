@@ -1,6 +1,7 @@
 module.exports = [
     { route: "/categories", target: "http://localhost:5001/categories" },
     { route: "/items", target: "http://localhost:5001/items" },
+    { route: "/catalogs", target: "http://localhost:5001/catalogs" },
     { route: "/orders", target: "http://localhost:5004/orders" },
     { route: "/orders-items", target: "http://localhost:5004/orders-items" },
     { route: "/payments", target: "http://localhost:5005/payments" },

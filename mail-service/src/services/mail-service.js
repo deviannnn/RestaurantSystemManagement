@@ -13,13 +13,13 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const composeActiveMail = (fullName, gender, email, phone, link) => {
+const composeActiveMail = (fullName, gender, gmail, password, link) => {
     try {
         const replacements = {
             '{{FULLNAME}}': fullName,
             '{{GENDER}}': gender === true ? 'Mr' : 'Mrs',
-            '{{USERNAME}}': email,
-            '{{PASSWORD}}': phone,
+            '{{USERNAME}}': gmail,
+            '{{PASSWORD}}': password,
             '{{LINK}}': link
         };
 
@@ -30,7 +30,7 @@ const composeActiveMail = (fullName, gender, email, phone, link) => {
         }
 
         return {
-            mail: email,
+            mail: gmail,
             subject: 'WELCOME NEW EMPLOYEES',
             content: mailHtml
         };
@@ -40,7 +40,7 @@ const composeActiveMail = (fullName, gender, email, phone, link) => {
     }
 }
 
-const composeResetPasswordMail = (fullName, gender, email, password) => {
+const composeResetPasswordMail = (fullName, gender, gmail, password) => {
     try {
         const replacements = {
             '{{FULLNAME}}': fullName,
@@ -55,7 +55,7 @@ const composeResetPasswordMail = (fullName, gender, email, password) => {
         }
 
         return {
-            mail: email,
+            mail: gmail,
             subject: 'Reset Password for User',
             content: mailHtml
         };
