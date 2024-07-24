@@ -1,4 +1,6 @@
-const OrderItemService = require('../services/order-item-service');
+const createError = require('http-errors');
+
+const { OrderItemService } = require('../services');
 
 module.exports = {
     /** Expected Input

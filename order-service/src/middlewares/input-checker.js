@@ -21,7 +21,7 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(`${API_GATEWAY}/tables/${tableId}`); // no exist will throw
+            const response = await axios.get(`${API_GATEWAY}/api/tables/${tableId}`); // no exist will throw
             req.table = response.data.data.table;
             return next();
         } catch (error) {
@@ -75,7 +75,7 @@ module.exports = {
             const items = req.body.items;
             try {
                 const itemIds = items.map(i => i.itemId);
-                const response = await axios.post(`${API_GATEWAY}/items/batch`, { itemIds }); // no exist will throw
+                const response = await axios.post(`${API_GATEWAY}/api/items/batch`, { itemIds }); // no exist will throw
                 // Gán dữ liệu trả về vào req
                 req.itemDatas = response.data.data.items.map(itemRes => {
                     const item = items.find(i => i.itemId === itemRes.id);

@@ -40,7 +40,7 @@ module.exports = {
                 if (!role) return next(createError(404, 'Role not found'));
                 res.status(200).json({
                     success: true,
-                    message: 'Get role successfull!',
+                    message: 'Get role successfully!',
                     data: { role }
                 });
             } else {
