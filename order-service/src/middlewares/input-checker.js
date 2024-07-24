@@ -21,7 +21,7 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(`${API_GATEWAY}/api/tables/${tableId}`); // no exist will throw
+            const response = await axios.get(`${API_GATEWAY}/api/tables/${tableId}`, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
             req.table = response.data.data.table;
             return next();
         } catch (error) {
@@ -67,15 +67,15 @@ module.exports = {
     // Expecting an array of items { itemId, quantity, note }
     checkBodyItems: [
         check('items').isArray({ min: 1 }).withMessage('Items must be a non-empty array'),
-        check('items.*.itemId').trim().notEmpty().withMessage('Item ID is required'),
-        check('items.*.quantity').trim().notEmpty().isInt().withMessage('Item Quantity must be an integer > 0'),
+        check('items.*.itemId').notEmpty().withMessage('Item ID is required'),
+        check('items.*.quantity').notEmpty().isInt().withMessage('Item Quantity must be an integer > 0'),
         check('items.*.note').optional().isString().withMessage('Item Note must be a string'),
         validator,
         async (req, res, next) => {
             const items = req.body.items;
             try {
                 const itemIds = items.map(i => i.itemId);
-                const response = await axios.post(`${API_GATEWAY}/api/items/batch`, { itemIds }); // no exist will throw
+                const response = await axios.post(`${API_GATEWAY}/api/items/batch`, { itemIds }, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
                 // Gán dữ liệu trả về vào req
                 req.itemDatas = response.data.data.items.map(itemRes => {
                     const item = items.find(i => i.itemId === itemRes.id);

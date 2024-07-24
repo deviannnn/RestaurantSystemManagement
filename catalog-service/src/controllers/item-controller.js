@@ -246,6 +246,7 @@ module.exports = {
                 const { itemIds } = req.body; // Expecting an array of itemIds
                 const { validItems, invalidItems } = await ItemService.getItemsByListIds(itemIds);
 
+                console.log(itemIds);
                 if (invalidItems.length > 0) {
                     return next(createError(400, 'Some items are not valid', { data: { items: invalidItems } }));
                 }
