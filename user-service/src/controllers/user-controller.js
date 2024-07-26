@@ -9,7 +9,6 @@ const inputChecker = require('../middlewares/input-checker');
 const { UserService, RabbitMQService, RedisService } = require('../services');
 
 const SALT_PASSWORD = 10;
-const API_GATEWAY = process.env.API_GATEWAY_HOSTNAME || 'http://localhost:5000';
 
 const hashToken = (token) => {
     return crypto.createHash('sha256').update(token).digest('hex');
@@ -35,9 +34,10 @@ module.exports = {
                 const newUser = await UserService.createUser({ roleId, fullName, gender, nationalId, phone, gmail, password: hashPassword });
 
                 const token = jwtUtils.generateToken({ id: newUser.id }, 'active');
-                const link = `${API_GATEWAY}/api/auth/active?token=${token}`;
-
-                const dataToSend = { type: 'active', fullName, gender, gmail, password, link }
+                const dataToSend = {
+                    type: 'active', fullName, gender, gmail, password,
+                    route: `/api/auth/active?token=${token}`
+                }
                 await RabbitMQService.publishNewMail(dataToSend).catch(err => {
                     console.error('Error publishing On User Registed:', err);
                 });
@@ -344,7 +344,7 @@ module.exports = {
                 gender: user.gender,
                 gmail: user.gmail,
                 phone: user.phone,
-                link: `${API_GATEWAY}/auth/active?token=${token}`
+                route: `/auth/active?token=${token}`
             }
             await RabbitMQService.publishNewMail(dataToSend).catch(err => {
                 console.error('Error publishing On User Registed:', err);

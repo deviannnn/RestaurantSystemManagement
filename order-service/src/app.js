@@ -16,7 +16,8 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.connect();
         console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
-        console.error('Failed to connect to RabbitMQ:', error);
+        console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
+        console.error('[ERROR] Failed to connect to RabbitMQ -', error);
         process.exit(1);
     }
 })();

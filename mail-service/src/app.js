@@ -16,11 +16,11 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.consumeQueue('send-mail', (mailData) => {
             console.log('\nReceived mail:', mailData);
 
-            const { type, fullName, gender, gmail, password, link } = mailData;
+            const { type, fullName, gender, gmail, password, route } = mailData;
             
             let mailComposer;
             if (type === 'active') {
-                mailComposer = MailService.composeActiveMail(fullName, gender, gmail, password, link);
+                mailComposer = MailService.composeActiveMail(fullName, gender, gmail, password, route);
             } else if (type === 'resetpassword') {
                 mailComposer = MailService.composeResetPasswordMail(fullName, gender, gmail, password);
             }
@@ -30,7 +30,8 @@ const RabbitMQ = require('./config/rabbitmq');
 
         console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
-        console.error('Failed to set up RabbitMQ subscriber:', error);
+        console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
+        console.error('[ERROR] Failed to connect to RabbitMQ -', error);
         process.exit(1);
     }
 })();

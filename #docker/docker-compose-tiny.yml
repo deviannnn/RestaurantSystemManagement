@@ -1,23 +1,6 @@
 version: '3.8'
 
-networks:
-  restaurant_network:
-    driver: overlay
-
 services:
-  viz:
-    image: dockersamples/visualizer
-    ports:
-      - "8080:8080"
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - restaurant_network
-
   user_mysql:
     image: mysql:9
     restart: always
@@ -29,7 +12,7 @@ services:
     volumes:
       - user-db-data:/var/lib/mysql
     networks:
-      - restaurant_network
+      - restaurant_net
 
   rabbitmq_service:
     image: rabbitmq:3.13-management-alpine
@@ -42,7 +25,7 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - restaurant_network
+      - restaurant_net
 
   redis_service:
     image: redis:7.2.5-alpine
@@ -51,7 +34,7 @@ services:
     volumes:
       - redis-data:/var/lib/redis
     networks:
-      - restaurant_network
+      - restaurant_net
 
   user_service:
     image: deviannnn/restaurant:user
@@ -66,23 +49,47 @@ services:
       - PROD_DB_NAME=restaurant_system_user
       - PROD_DB_HOSTNAME=user_mysql
       - PROD_REDIS_HOST=redis_service
-      - API_GATEWAY_HOSTNAME=api_gateway
     networks:
-      - restaurant_network
+      - restaurant_net
+    depends_on:
+      - user_mysql
+      - rabbitmq_service
+      - redis_service
 
   api_gateway:
     image: deviannnn/restaurant:api-gateway
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - USER_SERVICE=user_service
+      - USER_SERVICE_HOSTNAME=user_service
+      - USER_SERVICE_PORT=5000
       - PROD_REDIS_HOST=redis_service
     ports:
       - "5000:5000"
     networks:
-      - restaurant_network
+      - restaurant_net
+    depends_on:
+      - user_service
+
+  viz:
+    image: dockersamples/visualizer
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - restaurant_net
 
 volumes:
   user-db-data:
   rabbitmq-data:
   redis-data:
+
+
+networks:
+  restaurant_net:
+    driver: overlay

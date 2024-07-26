@@ -16,7 +16,8 @@ const Redis = require('./config/redis');
     await Redis.connect();
     console.log(`Redis connection established on [${Redis.redisUrl}]`);
   } catch (error) {
-    console.error('Failed to connect to Redis:', error);
+    console.error('[ERROR] Config -', Redis.redisUrl);
+    console.error('[ERROR] Failed to connect to Redis -', error);
     process.exit(1);
   }
 })();
@@ -30,17 +31,19 @@ app.disable("x-powered-by"); // Hide Express server information
 app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
 
 // Set up proxy middleware for each microservice
-services.forEach(({ route, target }) => {
+services.forEach(({ route, protocol, target }) => {
+  const isWebSocket = protocol === 'ws';
+
   const proxyOptions = {
-    target,
+    target: isWebSocket ? target : `${target}${route}`,
     changeOrigin: true,
-    pathRewrite: { [`/api^${route}`]: "" },
     on: {
       error: (err, req, res) => {
         console.error('Proxy error:', err);
-        res.status(500).json({ message: 'Proxy error', error: err.message });
+        res.status(500).json({ success: false, error: { header: 'Proxy Error', message: err.message } });
       },
-    }
+    },
+    ws: isWebSocket
   };
 
   if (route === '/auth') {
@@ -49,20 +52,6 @@ services.forEach(({ route, target }) => {
     app.use(`/api${route}`, checkRevokedToken, authenticate, createProxyMiddleware(proxyOptions));
   }
 });
-
-// WebSocket handling
-app.use('/api/ws/kitchen', createProxyMiddleware({
-  target: `ws://${process.env.KITCHEN_SERVICE}`,
-  changeOrigin: true,
-  ws: true, // Enable WebSocket proxying
-}));
-
-// WebSocket handling
-app.use('/api/ws/waiter', createProxyMiddleware({
-  target: `ws://${process.env.WAITER_SERVICE}`,
-  changeOrigin: true,
-  ws: true, // Enable WebSocket proxying
-}));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) { next(createError(404)); });
@@ -114,5 +103,5 @@ const PORT = process.env.PORT || 5000;
 
 // Start Express server
 app.listen(PORT, () => {
-  console.log(`\nAPI Gateway is running on port ${PORT}\n`);
+  console.log(`\nAPI Gateway is running on port ${PORT}`);
 });

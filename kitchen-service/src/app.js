@@ -2,7 +2,7 @@ require('dotenv').config();
 const WebSocket = require('ws');
 const jwtUtils = require('./utils/jwt');
 
-const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT || 5000;
+const WEBSOCKET_PORT = process.env.PORT || 5000;
 
 const wss = new WebSocket.Server({
     port: WEBSOCKET_PORT,
@@ -54,7 +54,8 @@ const RabbitMQ = require('./config/rabbitmq');
 
         console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
-        console.error('Failed to set up RabbitMQ subscriber:', error);
+        console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
+        console.error('[ERROR] Failed to connect to RabbitMQ -', error);
         process.exit(1); // Exit the process with error
     }
 })();

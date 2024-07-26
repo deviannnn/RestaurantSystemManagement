@@ -18,7 +18,8 @@ const Redis = require('./config/redis');
         await Redis.connect();
         console.log(`Redis connection established on [${Redis.redisUrl}]`);
     } catch (error) {
-        console.error('Failed to connect to Redis:', error);
+        console.error('[ERROR] Config -', Redis.redisUrl);
+        console.error('[ERROR] Failed to connect to Redis -', error);
         process.exit(1);
     }
 })();

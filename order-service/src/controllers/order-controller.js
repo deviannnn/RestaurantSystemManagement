@@ -1,4 +1,3 @@
-const axios = require('axios');
 const createError = require('http-errors');
 const inputChecker = require('../middlewares/input-checker');
 

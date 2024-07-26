@@ -3,7 +3,7 @@ const createError = require('http-errors');
 const { check } = require('express-validator');
 const validator = require('./vaildator');
 
-const OrderService = process.env.CATALOG_SERVICE_HOSTNAME || 'http://localhost:5002';
+const OrderServiceTarget = `${process.env.ORDER_SERVICE_PROTOCAL}://${process.env.ORDER_SERVICE_HOSTNAME}:${process.env.ORDER_SERVICE_PORT}`;
 const SurchargeService = require('../services/surcharge-service');
 
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(`${OrderService}/orders/${orderId}`);
+            const response = await axios.get(`${OrderServiceTarget}/orders/${orderId}`, { headers: { Authorization: req.headers.authorization } });
             req.order = response.data.data.order;
             return next();
         } catch (error) {
@@ -44,7 +44,7 @@ module.exports = {
         check('note').optional().isString().withMessage('Payment Note must be a string'),
         validator
     ],
-    
+
     // { surchargeIds } = req.body;
     checkBodySurchargeIds: [
         check('surchargeIds').isArray({ min: 1 }).withMessage('Payment SurchargeIds must be a non-empty array'),

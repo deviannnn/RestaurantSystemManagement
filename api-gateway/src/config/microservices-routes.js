@@ -1,20 +1,31 @@
 require('dotenv').config();
 
+const createRoute = (route, service) => {
+    const protocol = process.env[`${service}_PROTOCAL`];
+    const hostname = process.env[`${service}_HOSTNAME`];
+    const port = process.env[`${service}_PORT`];
+
+    return { route, protocol, target: `${protocol}://${hostname}:${port}` };
+};
+
 module.exports = [
-    { route: "/catalogs", target: `http://${process.env.CATALOG_SERVICE}/catalogs` },
-    { route: "/categories", target: `http://${process.env.CATALOG_SERVICE}/categories` },
-    { route: "/items", target: `http://${process.env.CATALOG_SERVICE}/items` },
+    createRoute('/catalogs', 'CATALOG_SERVICE'),
+    createRoute('/categories', 'CATALOG_SERVICE'),
+    createRoute('/items', 'CATALOG_SERVICE'),
 
-    { route: "/orders", target: `http://${process.env.ORDER_SERVICE}/orders` },
-    { route: "/orders-items", target: `http://${process.env.ORDER_SERVICE}/orders-items` },
+    createRoute('/orders', 'ORDER_SERVICE'),
+    createRoute('/orders-items', 'ORDER_SERVICE'),
 
-    { route: "/payments", target: `http://${process.env.PAYMENT_SERVICE}/payments` },
-    { route: "/surcharges", target: `http:/${process.env.PAYMENT_SERVICE}/surcharges` },
-    { route: "/payments-surcharges", target: `http:/${process.env.PAYMENT_SERVICE}/payments-surcharges` },
+    createRoute('/payments', 'PAYMENT_SERVICE'),
+    createRoute('/surcharges', 'PAYMENT_SERVICE'),
+    createRoute('/payments-surcharges', 'PAYMENT_SERVICE'),
 
-    { route: "/tables", target: `http://${process.env.TABLE_SERVICE}/tables` },
+    createRoute('/tables', 'TABLE_SERVICE'),
 
-    { route: "/auth", target: `http://${process.env.USER_SERVICE}/auth` },
-    { route: "/users", target: `http://${process.env.USER_SERVICE}/users` },
-    { route: "/roles", target: `http://${process.env.USER_SERVICE}/roles` }
-]
+    createRoute('/auth', 'USER_SERVICE'),
+    createRoute('/users', 'USER_SERVICE'),
+    createRoute('/roles', 'USER_SERVICE'),
+
+    createRoute('/ws/kitchens', 'KITCHEN_SERVICE'),
+    createRoute('/ws/waiters', 'WAITER_SERVICE')
+];

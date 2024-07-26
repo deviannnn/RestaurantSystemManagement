@@ -94,7 +94,7 @@ module.exports = {
 
             const deletedRole = await RoleService.deleteRole(roleId);
             if (!deletedRole) return next(createError(404, 'Role not found'));
-            
+
             res.status(200).json({
                 success: true,
                 message: 'Delete role sucessfully!',

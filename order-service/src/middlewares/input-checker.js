@@ -1,9 +1,11 @@
+require('dotenv').config();
 const axios = require('axios');
 const createError = require('http-errors');
 const { check } = require('express-validator');
 const validator = require('./vaildator');
 
-const API_GATEWAY = process.env.API_GATEWAY_HOSTNAME || 'http://localhost:5000';
+const CatalogServiceTarget = `${process.env.CATALOG_SERVICE_PROTOCAL}://${process.env.CATALOG_SERVICE_HOSTNAME}:${process.env.CATALOG_SERVICE_PORT}`;
+const TableServiceTarget = `${process.env.TABLE_SERVICE_PROTOCAL}://${process.env.TABLE_SERVICE_HOSTNAME}:${process.env.TABLE_SERVICE_PORT}`;
 const OrderService = require('../services/order-service');
 const OrderItemService = require('../services/order-item-service');
 
@@ -21,7 +23,7 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(`${API_GATEWAY}/api/tables/${tableId}`, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
+            const response = await axios.get(`${TableServiceTarget}/tables/${tableId}`, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
             req.table = response.data.data.table;
             return next();
         } catch (error) {
@@ -75,7 +77,7 @@ module.exports = {
             const items = req.body.items;
             try {
                 const itemIds = items.map(i => i.itemId);
-                const response = await axios.post(`${API_GATEWAY}/api/items/batch`, { itemIds }, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
+                const response = await axios.post(`${CatalogServiceTarget}/items/batch`, { itemIds }, { headers: { Authorization: req.headers.authorization } }); // no exist will throw
                 // Gán dữ liệu trả về vào req
                 req.itemDatas = response.data.data.items.map(itemRes => {
                     const item = items.find(i => i.itemId === itemRes.id);

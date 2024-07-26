@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
+const PUBLIC_IP_GATEWAY = process.env.PUBLIC_IP_GATEWAY || 'http://localhost:5000';
+
 const activeMail = path.join(process.cwd(), './src/public/assets/html/activeMail.html');
 const resetPasswordMail = path.join(process.cwd(), './src/public/assets/html/resetPasswordMail.html');
 
@@ -13,14 +15,14 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const composeActiveMail = (fullName, gender, gmail, password, link) => {
+const composeActiveMail = (fullName, gender, gmail, password, route) => {
     try {
         const replacements = {
             '{{FULLNAME}}': fullName,
             '{{GENDER}}': gender === true ? 'Mr' : 'Mrs',
             '{{USERNAME}}': gmail,
             '{{PASSWORD}}': password,
-            '{{LINK}}': link
+            '{{LINK}}': PUBLIC_IP_GATEWAY + route
         };
 
         let mailHtml = fs.readFileSync(activeMail, 'utf8');
@@ -67,7 +69,7 @@ const composeResetPasswordMail = (fullName, gender, gmail, password) => {
 
 const sendEmail = async (mailComposer) => {
     const { mail, subject, content } = mailComposer;
-    
+
     const mailOptions = {
         from: `Restaurant System <${process.env.EMAIL_USER}>`,
         to: mail,
@@ -84,4 +86,4 @@ const sendEmail = async (mailComposer) => {
 };
 
 
-module.exports = { sendEmail, composeActiveMail, composeResetPasswordMail};
+module.exports = { sendEmail, composeActiveMail, composeResetPasswordMail };

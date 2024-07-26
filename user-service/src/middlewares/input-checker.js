@@ -1,8 +1,8 @@
 const createError = require('http-errors');
-const { check, body } = require('express-validator');
+const { body } = require('express-validator');
 const validator = require('./vaildator');
 
-const { UserService, RoleService, RabbitMQ, RedisService } = require('../services');
+const { UserService, RoleService } = require('../services');
 
 module.exports = {
     checkBodyCreateRole: [

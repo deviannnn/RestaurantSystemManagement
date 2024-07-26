@@ -9,7 +9,8 @@ module.exports = async () => {
         await sequelize.authenticate();
         console.log(`MySQL connection established on [${config.host}:${config.port}]`);
     } catch (error) {
-        console.error('Failed to connect to MySQL', error);
+        console.error('[ERROR] Config -', config);
+        console.error('[ERROR] Failed to connect to MySQL -', error);
         process.exit(1);
     }
 }
