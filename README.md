@@ -1,37 +1,15 @@
-# RestaurantSystemManagement
+# Restaurant Management System
 
-docker-compose up -d
+Our restaurant management system is designed with a modern microservices architecture and deployed using Docker Swarm. Each microservice is written in Node.js with the Express.js framework. The system includes several key microservices:
 
-npx sequelize-cli db:migrate
+- **API Gateway**: Acts as the entry point for all client requests, routing them to the appropriate microservices.
+- **Catalog Service**: Manages the restaurant's menu, including categories and items.
+- **Kitchen Service**: Handles orders and kitchen operations.
+- **Mail Service**: Manages email notifications and communications.
+- **Order Service**: Processes and tracks customer orders.
+- **Payment Service**: Handles payment processing and transactions.
+- **Table Service**: Manages table reservations and seating arrangements.
+- **User Service**: Manages user authentication, authorization, and profiles.
+- **Waiter Service**: Facilitates communication between waitstaff and the kitchen.
 
-npx sequelize-cli db:migrate:undo:all
-
-npx sequelize-cli db:seed:all
-
-npx sequelize-cli db:seed:undo:all
-
-catalog service:
-`` PORT=5000
-`` DB_PORT=3307
-
-notification service:
-`` PORT=5001
-
-order service:
-`` PORT=5002
-`` DB_PORT=3308
-
-payment service:
-`` PORT=5003
-`` DB_PORT=3309
-
-table service:
-`` PORT=5004
-`` DB_PORT=3310
-
-user service:
-`` PORT=5005
-`` DB_PORT=3311
-
-kitchen service:
-`` PORT=5006
+This architecture allows for scalable, flexible, and efficient management of restaurant operations, ensuring smooth and reliable service.
