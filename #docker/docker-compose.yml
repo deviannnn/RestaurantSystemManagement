@@ -223,8 +223,6 @@ services:
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -248,8 +246,6 @@ services:
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -275,8 +271,6 @@ services:
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -295,8 +289,6 @@ services:
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
     environment:
       - NODE_ENV=production
       - PROD_REDIS_HOST=redis_service
