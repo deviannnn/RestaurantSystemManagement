@@ -1,9 +1,5 @@
 const { Payment, PaymentSurcharge } = require('../models');
 
-const includeOptions = [
-    { model: PaymentSurcharge, as: 'surcharges' }
-];
-
 module.exports = {
     async createPayment(userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note) {
         try {
@@ -18,7 +14,7 @@ module.exports = {
     async getPaymentById(id) {
         try {
             return await Payment.findByPk(id, {
-                include: includeOptions
+                include: [{ model: PaymentSurcharge, as: 'surcharges' }]
             });
         } catch (error) {
             console.error('Error getting payment by ID:', error);
@@ -28,7 +24,9 @@ module.exports = {
 
     async getAllPayments() {
         try {
-            const payments = await Payment.findAll({ raw: false, include: includeOptions });
+            const payments = await Payment.findAll({
+                include: [{ model: PaymentSurcharge, as: 'surcharges' }]
+            });
             return payments;
         } catch (error) {
             console.error('Error getting all payments:', error);
@@ -43,9 +41,7 @@ module.exports = {
                 { where: { id } }
             );
             if (updated) {
-                return await Payment.findByPk(id, {
-                    include: includeOptions
-                });
+                return await Payment.findByPk(id);
             }
             return null;
         } catch (error) {

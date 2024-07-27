@@ -5,8 +5,6 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - MYSQL_DATABASE=restaurant_system_catalog
       - MYSQL_ROOT_PASSWORD=123456
@@ -21,8 +19,6 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - MYSQL_DATABASE=restaurant_system_order
       - MYSQL_ROOT_PASSWORD=123456
@@ -37,8 +33,6 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - MYSQL_DATABASE=restaurant_system_payment
       - MYSQL_ROOT_PASSWORD=123456
@@ -53,8 +47,6 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - MYSQL_DATABASE=restaurant_system_table
       - MYSQL_ROOT_PASSWORD=123456
@@ -69,8 +61,6 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - MYSQL_DATABASE=restaurant_system_user
       - MYSQL_ROOT_PASSWORD=123456
@@ -85,8 +75,6 @@ services:
     image: rabbitmq:3.13-management-alpine
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
@@ -102,8 +90,6 @@ services:
     image: redis:7.2.5-alpine
     deploy:
       replicas: 1
-      restart_policy:
-        condition: always
     ports:
       - "6379:6379"
     volumes:

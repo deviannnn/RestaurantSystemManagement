@@ -1,7 +1,7 @@
 const createError = require('http-errors');
 const { extractToken, decodeToken } = require('../utils/jwt');
 
-const rolesMap = { "admin": 1, "manager": 2, "chef": 3, "staff": 4 }
+const rolesMap = { "admin": 1, "manager": 2, "chef": 3, "waiter": 4 }
 
 const authenticate = (req, res, next) => {
     const token = extractToken(req);

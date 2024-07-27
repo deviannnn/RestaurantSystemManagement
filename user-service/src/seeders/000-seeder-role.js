@@ -24,7 +24,7 @@ module.exports = {
         updatedAt: new Date()
       },
       {
-        name: 'staff',
+        name: 'waiter',
         active: true,
         createdAt: new Date(),
         updatedAt: new Date()

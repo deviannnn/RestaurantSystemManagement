@@ -8,28 +8,28 @@ const { authenticate, authorize } = require('../middlewares/auth');
 router.use(authenticate);
 
 // Orders CRUD
-router.post('/orders', authorize(["manager", "staff"]), OrderController.createOrder);
-router.get('/orders', authorize(["manager", "staff"]), OrderController.getAllOrders);
-router.get('/orders/:orderId', authorize(["manager", "staff"]), OrderController.getOrder);
+router.post('/orders', authorize(["manager", "waiter"]), OrderController.createOrder);
+router.get('/orders', authorize(["manager", "waiter"]), OrderController.getAllOrders); // req.query.userId, status, fromDate, toDate ?
+router.get('/orders/:orderId', authorize(["manager", "waiter"]), OrderController.getOrder); // req.query.include ?
 router.put('/orders/:orderId', authorize(["admin", "manager"]), OrderController.updateOrder);
 router.delete('/orders/:orderId', authorize(["admin"]), OrderController.deleteOrder);
 
 // Orders Business Logic
-router.put('/orders/:orderId/change-table', OrderController.changeTable);
-router.put('/orders/:orderId/cancel', OrderController.cancelOrder);
-router.post('/orders/:orderId/add-items', OrderController.addItemsToOrder);
-router.put('/orders/:orderId/updated-items', OrderController.updateItemsToOrder);
+router.put('/orders/:orderId/change-table', authorize(["manager", "waiter"]), OrderController.changeTable);
+router.put('/orders/:orderId/cancel', authorize(["manager"]), OrderController.cancelOrder);
+router.post('/orders/:orderId/add-items', authorize(["waiter"]), OrderController.addItemsToOrder);
+router.put('/orders/:orderId/updated-items', authorize(["waiter"]), OrderController.updateItemsToOrder);
 
 
 // OrdersItems CRUD
-router.post('/orders-items', OrderItemController.createOrderItem);
+router.post('/orders-items', authorize(["admin", "manager"]), OrderItemController.createOrderItem);
 router.get('/orders-items/:orderItemId?', OrderItemController.getOrderItems);
-router.put('/orders-items/:orderItemId', OrderItemController.updateOrderItem);
-router.delete('/orders-items/:orderItemId', OrderItemController.deleteOrderItem);
+router.put('/orders-items/:orderItemId', authorize(["admin", "manager"]), OrderItemController.updateOrderItem);
+router.delete('/orders-items/:orderItemId', authorize(["admin", "manager"]), OrderItemController.deleteOrderItem);
 
 // OrdersItems Business Logic
-router.post('/orders-items/:orderItemId/request-cancel', OrderController.requestCancelOrderItem);
-router.put('/orders-items/:orderItemId/change-status', OrderController.changeOrderItemStatus);
+router.post('/orders-items/:orderItemId/request-cancel', authorize(["waiter"]), OrderController.requestCancelOrderItem);
+router.put('/orders-items/:orderItemId/change-status', authorize(["manager", "chef"]), OrderController.changeOrderItemStatus);
 
 
 module.exports = router;

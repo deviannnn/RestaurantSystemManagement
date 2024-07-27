@@ -6,12 +6,12 @@ const { OrderService, OrderItemService, RabbitMQService } = require('../services
 // Function to handle add order items
 async function processAddOrderItems(orderId, itemDatas) {
     const orderItemsToCreate = [];
-    const failedItems = [];
+    const failures = [];
 
     await Promise.allSettled(
         itemDatas.map(async (itemData) => {
             try {
-                const existingOrderItem = await OrderItemService.getByOrderIdAndItemId(orderId, itemData.itemId);
+                const existingOrderItem = await OrderItemService.findOrderItemInPending(orderId, itemData.itemId);
 
                 if (existingOrderItem) {
                     const newQuantity = existingOrderItem.quantity + itemData.quantity;
@@ -31,8 +31,7 @@ async function processAddOrderItems(orderId, itemDatas) {
                     });
                 }
             } catch (error) {
-                console.error(`Error processing item ${itemData.itemId}:`, error);
-                failedItems.push({ itemId: itemData.itemId, name: itemData.name });
+                failures.push({ id: itemData.itemId, name: itemData.name });
             }
         })
     );
@@ -41,65 +40,14 @@ async function processAddOrderItems(orderId, itemDatas) {
         try {
             await OrderItemService.bulkCreateOrderItems(orderItemsToCreate);
         } catch (error) {
-            console.error('Error bulk creating order items:', error);
-            failedItems.push(...orderItemsToCreate.map(item => ({ itemId: item.itemId, name: item.name })));
+            failures.push(...orderItemsToCreate.map(item => ({ id: item.itemId, name: item.name })));
         }
     }
 
-    if (failedItems.length > 0) {
+    if (failures.length > 0) {
         const error = new Error('Some items could not be added to order');
         error.status = 500;
-        error.data = { failedItems };
-        throw error;
-    }
-
-    const updatedOrder = await OrderService.getOrderById(orderId);
-    return updatedOrder.toJSON();
-}
-
-
-// Function to handle update orderItems
-async function processUpdateOrderItems(orderId, orderItems) {
-    const failedItems = [];
-
-    await Promise.allSettled(
-        orderItems.map(async (orderItem) => {
-            try {
-                const { orderItemId, quantity, note } = orderItem;
-                const existingOrderItem = await OrderItemService.getOrderItemById(orderItemId);
-
-                if (!existingOrderItem) {
-                    throw new Error(`OrderItem with id ${orderItemId} not found`);
-                }
-                if (existingOrderItem.orderId !== orderId) {
-                    throw new Error(`OrderItem with id ${orderItemId} does not belong to order ${orderId}`);
-                }
-                if (existingOrderItem.status !== 'pending') {
-                    throw new Error('This dish is being prepared, please contact the waiter for assistance');
-                }
-
-                const newQuantity = quantity !== undefined ? quantity : existingOrderItem.quantity;
-                const newAmount = newQuantity * existingOrderItem.price;
-
-                await OrderItemService.updateOrderItem({
-                    id: existingOrderItem.id,
-                    quantity: newQuantity,
-                    amount: newAmount,
-                    note: note !== undefined ? note : existingOrderItem.note
-                });
-
-                return null;
-            } catch (error) {
-                console.error(`Error processing order item ${orderItem.orderItemId}:`, error);
-                failedItems.push({ orderItemId: orderItem.orderItemId, detail: error.message });
-            }
-        })
-    );
-
-    if (failedItems.length > 0) {
-        const error = new Error('Some order items could not be updated');
-        error.status = 500;
-        error.data = { failedItems };
+        error.data = { orderItems: failures };
         throw error;
     }
 
@@ -149,8 +97,9 @@ module.exports = {
     async getOrder(req, res, next) {
         try {
             const { orderId } = req.params;
+            const include = req.query.include === 'true' || req.query.include === '1' ? true : false;
 
-            const order = await OrderService.getOrderById(orderId);
+            const order = await OrderService.getOrderById(orderId, include);
             if (!order) return next(createError(404, 'Order not found'));
 
             res.status(200).json({
@@ -163,19 +112,30 @@ module.exports = {
         }
     },
 
-    async getAllOrders(req, res, next) {
-        try {
-            const orders = await OrderService.getAllOrders();
+    /** Expected Input
+     * 
+     * { userId, status, fromDate, toDate } = req.query
+     * 
+     */
+    getAllOrders: [
+        inputChecker.checkQueryGetAllOrders,
+        async (req, res, next) => {
+            try {
+                let { userId, status, fromDate, toDate } = req.query;
 
-            res.status(200).json({
-                success: true,
-                message: 'Get all orders successfully!',
-                data: { orders }
-            });
-        } catch (error) {
-            return next(error);
+                if (req.user.roleId === 4) userId = req.user.id;
+                const orders = await OrderService.getAllOrders(userId, status, fromDate, toDate);
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Get all orders successfully!',
+                    data: { orders }
+                });
+            } catch (error) {
+                return next(error);
+            }
         }
-    },
+    ],
 
     /** Expected Input
      * 
@@ -249,8 +209,7 @@ module.exports = {
 
                 const updatedOrder = await OrderService.updateOrder({ id: orderId, tableId: newTableId });
 
-                const dataToSend = { open: oldTableId, close: newTableId };
-                await RabbitMQService.publishOnOpenCloseTable(dataToSend).catch(err => {
+                await RabbitMQService.publishOnOpenCloseTable({ open: oldTableId, close: newTableId }).catch(err => {
                     console.error('Error publishing On Open-Close Table:', err);
                 });
 
@@ -278,8 +237,7 @@ module.exports = {
 
                 const updatedOrder = await OrderService.updateOrder({ id: order.id, status: 'cancelled', active: false });
 
-                const dataToSend = { open: order.tableId, close: null };
-                await RabbitMQService.publishOnOpenCloseTable(dataToSend).catch(err => {
+                await RabbitMQService.publishOnOpenCloseTable({ open: order.tableId, close: null }).catch(err => {
                     console.error('Error publishing On Open-Close Table:', err);
                 });
 
@@ -310,32 +268,33 @@ module.exports = {
 
                 // add or update order items
                 const updatedOrder = await processAddOrderItems(orderId, itemDatas);
-
-                const dataToSend = {
-                    type: 'add',
-                    orderId,
-                    tableId: updatedOrder.tableId,
-                    waiter: updatedOrder.userId,
-                    items: updatedOrder.items.map(orderItem => {
-                        const itemData = itemDatas.find(data => data.itemId === orderItem.itemId);
+                const filteredOrderItems = updatedOrder.orderItems
+                    .filter(orderItem =>
+                        orderItem.status === 'pending' &&
+                        orderItem.active === false &&
+                        itemDatas.some(itemData => itemData.itemId === orderItem.itemId)
+                    )
+                    .map(orderItem => {
+                        const matchedItemData = itemDatas.find(itemData => itemData.itemId === orderItem.itemId);
                         return {
-                            orderItemId: orderItem.id,
-                            ...itemData
+                            ...orderItem,
+                            note: matchedItemData ? matchedItemData.note : ''
                         };
-                    })
-                }
+                    });
 
-                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
+                await RabbitMQService.publishOrderToKitchen({
+                    type: 'add',
+                    orderItems: filteredOrderItems
+                }).catch(err => {
                     console.error('Error publishing Order To Kitchen:', err);
                 });
 
                 res.status(200).json({
                     success: true,
-                    message: 'Items added to order successfully!',
-                    data: { order: updatedOrder }
+                    message: 'Add items to order successfully!',
+                    data: { orderItems: filteredOrderItems }
                 });
             } catch (error) {
-                console.log(error.message);
                 return next(error);
             }
         }
@@ -344,7 +303,7 @@ module.exports = {
     /** Expected Input
      * 
      * orderId = req.params
-     * array of { orderItemId, quantity, note } = req.body.orderItems
+     * array of { id, quantity, note } = req.body.orderItems
      * 
      */
     updateItemsToOrder: [
@@ -353,28 +312,44 @@ module.exports = {
         async (req, res, next) => {
             try {
                 const orderId = req.order.id;
-                const orderItems = req.body.orderItems;
+                const orderItemDatas = req.updatableOrderItems; // response expecting an array of { id, newQuantity, newAmount, note }
+                const failOrderItems = req.failOrderItems;
 
-                const updatedOrder = await processUpdateOrderItems(orderId, orderItems);
-
-                const dataToSend = {
-                    type: 'update',
-                    orderId,
-                    tableId: updatedOrder.tableId,
-                    waiter: updatedOrder.userId,
-                    items: updatedOrder.items.map(orderItem => {
-                        return orderItems.find(data => data.orderItemId === orderItem.id);
+                await Promise.all(
+                    orderItemDatas.map(async (orderItem) => {
+                        const { id, newQuantity, newAmount } = orderItem;
+                        await OrderItemService.updateOrderItem({
+                            id,
+                            quantity: newQuantity,
+                            amount: newAmount,
+                        });
                     })
-                }
+                );
 
-                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
+                let updatedOrder = await OrderService.getOrderById(orderId);
+                updatedOrder = updatedOrder.toJSON();
+
+                const filteredOrderItems = updatedOrder.orderItems
+                    .filter(orderItem => orderItemDatas.some(orderItemData => orderItemData.id === orderItem.id))
+                    .map(orderItem => {
+                        const matchedOrderItemData = orderItemDatas.find(orderItemData => orderItemData.id === orderItem.id);
+                        return {
+                            ...orderItem,
+                            note: matchedOrderItemData.note
+                        };
+                    });
+
+                await RabbitMQService.publishOrderToKitchen({
+                    type: 'update',
+                    orderItems: filteredOrderItems
+                }).catch(err => {
                     console.error('Error publishing Order To Kitchen:', err);
                 });
 
                 res.status(200).json({
                     success: true,
-                    message: 'Items updated to order successfully!',
-                    data: { order: updatedOrder }
+                    message: 'Updated items to order successfully!',
+                    data: { orderItems: filteredOrderItems, failOrderItems }
                 });
             } catch (error) {
                 return next(error);
@@ -391,17 +366,15 @@ module.exports = {
         inputChecker.checkOrderItem,
         async (req, res, next) => {
             try {
-                const orderItem = req.orderItem;
-
-                const dataToSend = { type: 'cancel', items: orderItem };
-                await RabbitMQService.publishOrderToKitchen(dataToSend).catch(err => {
-                    console.error('Error publishing Order To Kitchen:', err);
+                await RabbitMQService.publishOrderToKitchen({
+                    type: 'cancel',
+                    orderItems: req.orderItem
                 });
 
                 res.status(200).json({
                     success: true,
-                    message: 'The request to cancel the order items has been sent to the chef!',
-                    data: { orderItem }
+                    message: 'Send request to cancel the order item successfully!',
+                    data: {}
                 });
             } catch (error) {
                 return next(error);
@@ -416,24 +389,24 @@ module.exports = {
      * 
      */
     changeOrderItemStatus: [
-        inputChecker.checkOrderItem,
         inputChecker.checkBodyOrderItemStatus,
         async (req, res, next) => {
             try {
-                const orderItem = req.orderItem;
+                const orderItemId = req.params.orderItemId;
                 const { status } = req.body;
-                const updatePayload = { id: orderItem.id, status, active: status === 'finished' ? true : false };
 
-                const updatedOrderItem = await OrderItemService.updateOrderItem(updatePayload);
-
-                const dataToSend = { updatedOrderItem };
-                await RabbitMQService.publishOrderToWaiter(dataToSend).catch(err => {
-                    console.error('Error publishing Order To Waiter:', err);
+                const updatedOrderItem = await OrderItemService.updateOrderItem({
+                    id: orderItemId,
+                    status,
+                    active: status === 'finished' ? true : false
                 });
+                if (!updatedOrderItem) return next(createError(404, 'OrderItem not found'));
+
+                await RabbitMQService.publishOrderToWaiter({ updatedOrderItem });
 
                 res.status(200).json({
                     success: true,
-                    message: 'OrderItem updated to order successfully!',
+                    message: 'Update OrderItem status successfully!',
                     data: { orderItem: updatedOrderItem }
                 });
             } catch (error) {
