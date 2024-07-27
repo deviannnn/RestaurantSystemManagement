@@ -11,9 +11,10 @@ module.exports = {
         dialect: 'mysql',
         dialectOptions: {
             bigNumberStrings: true,
+            decimalNumbers: true
         },
         logging: false,
-        timezone: process.env.TIMEZONE || '+07:00'
+        timezone: process.env.TIMEZONE || '+07:00',
     },
     test: {
         username: process.env.CI_DB_USERNAME,
@@ -36,6 +37,7 @@ module.exports = {
         dialect: 'mysql',
         dialectOptions: {
             bigNumberStrings: true,
+            decimalNumbers: true
             // ssl: {
             //     ca: fs.readFileSync(__dirname + '/mysql-ca-main.crt'),
             // },

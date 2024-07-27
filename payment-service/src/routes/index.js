@@ -18,16 +18,16 @@ router.put('/payments/:paymentId/surcharges', authorize(["manager"]), PaymentCon
 
 
 // Surcharges CRUD
-router.post('/surcharges', SurchargeController.createSurcharge);
-router.get('/surcharges/:surchargeId?', SurchargeController.getSurcharges);
-router.put('/surcharges/:surchargeId?', SurchargeController.updateSurcharge);
-router.delete('/surcharges/:surchargeId?', SurchargeController.deleteSurcharge);
+router.post('/surcharges', authorize(["admin"]), SurchargeController.createSurcharge);
+router.get('/surcharges/:surchargeId?', authorize(["admin", "manager"]), SurchargeController.getSurcharges);
+router.put('/surcharges/:surchargeId?', authorize(["admin"]), SurchargeController.updateSurcharge);
+router.delete('/surcharges/:surchargeId?', authorize(["admin"]), SurchargeController.deleteSurcharge);
 
 
 // Payments_Surcharges CRUD
-router.post('/payments-surcharges', PaymentSurchargeController.createPaymentSurcharge);
-router.get('/payments-surcharges/:psId?', PaymentSurchargeController.getPaymentSurcharges);
-router.put('/payments-surcharges/:psId?', PaymentSurchargeController.updatePaymentSurcharge);
-router.delete('/payments-surcharges/:psId?', PaymentSurchargeController.deletePaymentSurcharge);
+router.post('/payments-surcharges', authorize(["admin", "manager"]), PaymentSurchargeController.createPaymentSurcharge);
+router.get('/payments-surcharges/:psId?', authorize(["admin", "manager"]), PaymentSurchargeController.getPaymentSurcharges);
+router.put('/payments-surcharges/:psId?', authorize(["admin", "manager"]), PaymentSurchargeController.updatePaymentSurcharge);
+router.delete('/payments-surcharges/:psId?', authorize(["admin", "manager"]), PaymentSurchargeController.deletePaymentSurcharge);
 
 module.exports = router;

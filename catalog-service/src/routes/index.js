@@ -9,13 +9,13 @@ router.use(authenticate);
 
 // Categories CRUD
 router.post('/categories', CategoryController.createCategory);
-router.get('/categories/:categoryId?', CategoryController.getCategories);
+router.get('/categories/:categoryId?', CategoryController.getCategories); // req.query.include ?
 router.put('/categories/:categoryId', CategoryController.updateCategory);
 router.delete('/categories/:categoryId', CategoryController.deleteCategory);
 
 
 // Items Business Logic
-router.put('/items/:itemId/toggle-available', ItemController.toggleAvailable);
+router.put('/items/:itemId/toggle-available', authorize(["manager", "chef"]), ItemController.toggleAvailable);
 router.get('/items/search', ItemController.getItemsSearch);
 router.post('/items/batch', ItemController.batchValidator);
 

@@ -1,14 +1,10 @@
 const { OrderItem, Order } = require('../models');
 
-const includeOptions = [
-    { model: Order, as: 'order' }
-];
-
 module.exports = {
     async createOrderItem(orderId, itemId, quantity, price, amount) {
         try {
             const newOrderItem = await OrderItem.create({ orderId, itemId, quantity, price, amount });
-            return newOrderItem.get({ plain: true });
+            return newOrderItem;
         } catch (error) {
             console.error('Error creating order item:', error);
             throw error;
@@ -25,10 +21,11 @@ module.exports = {
         }
     },
 
-    async getOrderItemById(id) {
+    async getOrderItemById(id, include = true) {
         try {
+            const includeCondition = include ? [{ model: Order, as: 'order' }] : [];
             return await OrderItem.findByPk(id, {
-                include: includeOptions
+                include: includeCondition
             });
         } catch (error) {
             console.error('Error getting order item by ID:', error);
@@ -45,13 +42,10 @@ module.exports = {
         }
     },
 
-    async getByOrderIdAndItemId(orderId, itemId) {
+    async findOrderItemInPending(orderId, itemId) {
         try {
             const orderItem = await OrderItem.findOne({
-                where: {
-                    orderId,
-                    itemId
-                }
+                where: { orderId, itemId, status: 'pending', active: false }
             });
             return orderItem;
         } catch (error) {
@@ -67,9 +61,7 @@ module.exports = {
                 { where: { id } }
             );
             if (updated) {
-                return await OrderItem.findByPk(id, {
-                    include: includeOptions
-                });
+                return await OrderItem.findByPk(id);
             }
             return null;
         } catch (error) {

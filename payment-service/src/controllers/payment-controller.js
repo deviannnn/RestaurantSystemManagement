@@ -18,7 +18,7 @@ function calculateSurchargeAmounts(surcharges, subAmount) {
         return acc;
     }, { totalSurcharge: 0, paymentSurcharges: [] });
 
-    return { totalSurcharge, paymentSurcharges };
+    return { totalSurcharge: parseFloat(totalSurcharge.toFixed(2)), paymentSurcharges };
 }
 
 module.exports = {
@@ -43,7 +43,7 @@ module.exports = {
 
                 const { totalSurcharge, paymentSurcharges } = calculateSurchargeAmounts(surcharges, subAmount);
 
-                const totalAmount = subAmount + totalSurcharge - totalDiscount;
+                const totalAmount = parseFloat((subAmount + totalSurcharge - totalDiscount).toFixed(2));
 
                 const payment = await PaymentService.createPayment(userId, orderId, subAmount, totalSurcharge, totalDiscount, totalAmount, note);
 
@@ -155,7 +155,7 @@ module.exports = {
                 const payment = await PaymentService.getPaymentById(paymentId);
                 if (!payment) return next(createError(404, 'Payment not found'));
 
-                const { subAmount, totalDiscount, surcharge: currentPaymentSurcharges } = payment.toJSON();
+                const { subAmount, totalDiscount, surcharges: currentPaymentSurcharges } = payment.toJSON();
                 const surcharges = req.surcharges;
 
                 const { totalSurcharge, paymentSurcharges } = calculateSurchargeAmounts(surcharges, subAmount);

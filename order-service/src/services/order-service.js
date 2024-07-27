@@ -12,22 +12,18 @@ module.exports = {
         }
     },
 
-    async getOrderById(id) {
+    async getOrderById(id, include = true) {
         try {
             const order = await Order.findOne({
                 where: { id },
                 attributes: [
-                    'id',
-                    'tableId',
-                    'userId',
-                    'status',
-                    'active',
+                    'id', 'tableId', 'userId', 'status', 'active',
+                    [fn('SUM', literal('CASE WHEN orderItems.active = true THEN orderItems.quantity ELSE 0 END')), 'totalItems'],
+                    [fn('ROUND', literal('SUM(CASE WHEN orderItems.active = true THEN orderItems.amount ELSE 0 END)'), 2), 'subAmount'],
                     'createdAt',
-                    'updatedAt',
-                    [fn('SUM', literal('CASE WHEN items.active = true THEN items.quantity ELSE 0 END')), 'totalItems'],
-                    [fn('SUM', literal('CASE WHEN items.active = true THEN items.amount ELSE 0 END')), 'subAmount']
+                    'updatedAt'
                 ],
-                include: { model: OrderItem, as: 'items', attributes: [] },
+                include: { model: OrderItem, as: 'orderItems', attributes: [] },
                 group: ['Order.id']
             });
 
@@ -36,11 +32,11 @@ module.exports = {
                 return null;
             }
 
-            order.dataValues.subAmount = parseFloat(order.dataValues.subAmount.toFixed(1));
-            order.dataValues.totalItems = Number(order.dataValues.totalItems);
-            order.dataValues.items = await OrderItem.findAll({
-                where: { orderId: order.id }
-            });
+            if (include) {
+                order.dataValues.orderItems = await OrderItem.findAll({
+                    where: { orderId: order.id }
+                });
+            }
 
             return order;
         } catch (error) {
@@ -49,43 +45,49 @@ module.exports = {
         }
     },
 
-    async getAllOrders() {
-        try {
-            return await Order.findAll();
-        } catch (error) {
-            console.error('Error getting all orders:', error);
-            throw error;
-        }
-    },
-
-    async getOrdersByUser(userId, status, fromDate, toDate) {
+    async getAllOrders(userId = null, status = null, fromDate = null, toDate = null) {
         try {
             const whereClause = {};
+
             if (userId) whereClause.userId = userId;
             if (status) whereClause.status = status;
-            if (fromDate && toDate) {
-                const startDate = new Date(fromDate);
-                startDate.setUTCHours(0, 0, 0, 0);
-                const endDate = new Date(toDate);
-                endDate.setUTCHours(23, 59, 59, 999);
-                whereClause.createdAt = { [Op.between]: [startDate, endDate] };
-            } else if (fromDate) {
-                const startDate = new Date(fromDate);
-                startDate.setUTCHours(0, 0, 0, 0);
-                whereClause.createdAt = { [Op.gte]: startDate };
-            } else if (toDate) {
-                const endDate = new Date(toDate);
-                endDate.setUTCHours(23, 59, 59, 999);
-                whereClause.createdAt = { [Op.lte]: endDate };
+
+            if (!fromDate && !toDate) {
+                fromDate = new Date().setUTCHours(0, 0, 0, 0);
+                toDate = new Date().setUTCHours(23, 59, 59, 999);
+                whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
+            } else if (fromDate && !toDate) {
+                fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                whereClause.createdAt = { [Op.gte]: fromDate };
+            } else if (!fromDate && toDate) {
+                toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                whereClause.createdAt = { [Op.lte]: toDate };
+            } else {
+                fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                if (fromDate > toDate) {
+                    [fromDate, toDate] = [toDate, fromDate];
+                    fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                    toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                }                
+                whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
             }
 
             const orders = await Order.findAll({
                 where: whereClause,
-                include: { model: OrderItem, as: 'items' }
+                attributes: [
+                    'id', 'tableId', 'userId', 'status', 'active',
+                    [fn('SUM', literal('CASE WHEN orderItems.active = true THEN orderItems.quantity ELSE 0 END')), 'totalItems'],
+                    [fn('ROUND', literal('SUM(CASE WHEN orderItems.active = true THEN orderItems.amount ELSE 0 END)'), 2), 'subAmount'],
+                    'createdAt',
+                    'updatedAt'
+                ],
+                include: { model: OrderItem, as: 'orderItems', attributes: [] },
+                group: ['Order.id']
             });
             return orders;
         } catch (error) {
-            console.error('Error fetching orders:', error);
+            console.error('Error getting all orders:', error);
             throw error;
         }
     },
