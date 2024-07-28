@@ -1,14 +1,24 @@
 const axios = require('axios');
 const createError = require('http-errors');
-const { check } = require('express-validator');
+const { body, query } = require('express-validator');
 const validator = require('./vaildator');
 
 const OrderServiceTarget = `${process.env.ORDER_SERVICE_PROTOCAL}://${process.env.ORDER_SERVICE_HOSTNAME}:${process.env.ORDER_SERVICE_PORT}`;
 const SurchargeService = require('../services/surcharge-service');
 
 module.exports = {
+    checkQueryGetAllPayments: [
+        query('fromDate')
+            .optional()
+            .isISO8601().toDate().withMessage('fromDate Query must be a valid date in (yyyy-mm-dd) format'),
+        query('toDate')
+            .optional()
+            .isISO8601().toDate().withMessage('toDate Query must be a valid date in (yyyy-mm-dd) format'),
+        validator
+    ],
+
     checkBodyOrder: [
-        check('orderId').notEmpty().withMessage('Order ID cannot be empty'),
+        body('orderId').notEmpty().withMessage('Order ID cannot be empty'),
         validator
     ],
 
@@ -40,14 +50,14 @@ module.exports = {
 
     // { totalDiscount, note } = req.body;
     checkBodyCreatePayment: [
-        check('totalDiscount').optional().notEmpty().isFloat({ min: 0 }).withMessage('Payment\'s TotalDiscount must be a real number >= 0'),
-        check('note').optional().isString().withMessage('Payment\'s Note must be a string'),
+        body('totalDiscount').optional().notEmpty().isFloat({ min: 0 }).withMessage('Payment\'s TotalDiscount must be a real number >= 0'),
+        body('note').optional().isString().withMessage('Payment\'s Note must be a string'),
         validator
     ],
 
     // { surchargeIds } = req.body;
     checkBodySurchargeIds: [
-        check('surchargeIds').isArray({ min: 1 }).withMessage('Payment\'s SurchargeIds must be a non-empty array'),
+        body('surchargeIds').isArray({ min: 1 }).withMessage('Payment\'s SurchargeIds must be a non-empty array'),
         validator,
         async (req, res, next) => {
             try {

@@ -1,3 +1,4 @@
+const { Op, fn, literal } = require('sequelize');
 const { Payment, PaymentSurcharge } = require('../models');
 
 module.exports = {
@@ -22,10 +23,27 @@ module.exports = {
         }
     },
 
-    async getAllPayments() {
+    async getAllPayments(userId = null, fromDate = null, toDate = null) {
         try {
+            const whereClause = {};
+
+            if (userId) whereClause.userId = userId;
+
+            if (!fromDate && !toDate) {
+                fromDate = new Date().setUTCHours(0, 0, 0, 0);
+                toDate = new Date().setUTCHours(23, 59, 59, 999);
+            } else {
+                if (fromDate) fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                if (toDate) toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                if (!fromDate) fromDate = new Date('2024-01-01').setUTCHours(0, 0, 0, 0);
+                if (!toDate) toDate = new Date().setUTCHours(23, 59, 59, 999);
+                if (fromDate > toDate) [fromDate, toDate] = [new Date(toDate).setUTCHours(0, 0, 0, 0), new Date(fromDate).setUTCHours(23, 59, 59, 999)];
+            }
+
+            whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
+
             const payments = await Payment.findAll({
-                include: [{ model: PaymentSurcharge, as: 'surcharges' }]
+                where: whereClause
             });
             return payments;
         } catch (error) {

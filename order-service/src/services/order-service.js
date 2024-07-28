@@ -55,23 +55,15 @@ module.exports = {
             if (!fromDate && !toDate) {
                 fromDate = new Date().setUTCHours(0, 0, 0, 0);
                 toDate = new Date().setUTCHours(23, 59, 59, 999);
-                whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
-            } else if (fromDate && !toDate) {
-                fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
-                whereClause.createdAt = { [Op.gte]: fromDate };
-            } else if (!fromDate && toDate) {
-                toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
-                whereClause.createdAt = { [Op.lte]: toDate };
             } else {
-                fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
-                toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
-                if (fromDate > toDate) {
-                    [fromDate, toDate] = [toDate, fromDate];
-                    fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
-                    toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
-                }                
-                whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
+                if (fromDate) fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                if (toDate) toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                if (!fromDate) fromDate = new Date('2024-01-01').setUTCHours(0, 0, 0, 0);
+                if (!toDate) toDate = new Date().setUTCHours(23, 59, 59, 999);
+                if (fromDate > toDate) [fromDate, toDate] = [new Date(toDate).setUTCHours(0, 0, 0, 0), new Date(fromDate).setUTCHours(23, 59, 59, 999)];
             }
+            
+            whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
 
             const orders = await Order.findAll({
                 where: whereClause,

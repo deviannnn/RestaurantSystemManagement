@@ -5,6 +5,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
+const OrderService = require('./services/order-service');
+
 // Connect to database
 const connectdb = require('./config/connectdb');
 connectdb();
@@ -14,6 +16,16 @@ const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();
+
+        await RabbitMQ.consumeExchange('new-payment-created', async (paymentData) => {
+            try {
+                console.log('\n[CREATED] Received payment:', paymentData);
+                await OrderService.updateOrder({ id: paymentData.orderId, status: 'finished', active: true });
+            } catch (error) {
+                console.error('Error updating table status for new order:', error);
+            }
+        });
+
         console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);

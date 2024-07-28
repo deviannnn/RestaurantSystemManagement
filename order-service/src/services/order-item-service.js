@@ -1,3 +1,4 @@
+const { Op, fn, col } = require('sequelize');
 const { OrderItem, Order } = require('../models');
 
 module.exports = {
@@ -33,9 +34,61 @@ module.exports = {
         }
     },
 
-    async getAllOrderItems() {
+    async getAllOrderItems(orderId = null, status = null, fromDate = null, toDate = null) {
         try {
-            return await OrderItem.findAll();
+            const whereClause = {};
+
+            if (orderId) whereClause.orderId = orderId;
+            if (status) whereClause.status = status;
+
+            if (!fromDate && !toDate) {
+                fromDate = new Date().setUTCHours(0, 0, 0, 0);
+                toDate = new Date().setUTCHours(23, 59, 59, 999);
+            } else {
+                if (fromDate) fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                if (toDate) toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                if (!fromDate) fromDate = new Date('2024-01-01').setUTCHours(0, 0, 0, 0);
+                if (!toDate) toDate = new Date().setUTCHours(23, 59, 59, 999);
+                if (fromDate > toDate) [fromDate, toDate] = [new Date(toDate).setUTCHours(0, 0, 0, 0), new Date(fromDate).setUTCHours(23, 59, 59, 999)];
+            }
+
+            whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
+
+            return await OrderItem.findAll({ where: whereClause });
+        } catch (error) {
+            console.error('Error getting all order items:', error);
+            throw error;
+        }
+    },
+
+    async getStatisticalOrderItems(status = null, fromDate = null, toDate = null) {
+        try {
+            const whereClause = {};
+
+            if (status) whereClause.status = status;
+
+            if (!fromDate && !toDate) {
+                fromDate = new Date().setUTCHours(0, 0, 0, 0);
+                toDate = new Date().setUTCHours(23, 59, 59, 999);
+            } else {
+                if (fromDate) fromDate = new Date(fromDate).setUTCHours(0, 0, 0, 0);
+                if (toDate) toDate = new Date(toDate).setUTCHours(23, 59, 59, 999);
+                if (!fromDate) fromDate = new Date('2024-01-01').setUTCHours(0, 0, 0, 0);
+                if (!toDate) toDate = new Date().setUTCHours(23, 59, 59, 999);
+                if (fromDate > toDate) [fromDate, toDate] = [new Date(toDate).setUTCHours(0, 0, 0, 0), new Date(fromDate).setUTCHours(23, 59, 59, 999)];
+            }
+
+            whereClause.createdAt = { [Op.between]: [fromDate, toDate] };
+
+            const orderItems = await OrderItem.findAll({
+                where: whereClause,
+                attributes: [
+                    'itemId',
+                    [fn('SUM', col('quantity')), 'totalQuantity']
+                ],
+                group: ['itemId']
+            });
+            return orderItems;
         } catch (error) {
             console.error('Error getting all order items:', error);
             throw error;

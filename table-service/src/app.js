@@ -9,7 +9,7 @@ const TableService = require('./services/table-service');
 
 // Connect to database
 const connectdb = require('./config/connectdb');
-connectdb(); 
+connectdb();
 
 // Connect to rabbitmq
 const RabbitMQ = require('./config/rabbitmq');
@@ -20,8 +20,16 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.consumeExchange('new-order-created', async (orderData) => {
             try {
                 console.log('\n[CREATED] Received order:', orderData);
-                // cập nhật trạng thái bàn
                 await TableService.updateTable({ id: orderData.tableId, status: 'occupied' });
+            } catch (error) {
+                console.error('Error updating table status for new order:', error);
+            }
+        });
+
+        await RabbitMQ.consumeExchange('new-payment-created', async (paymentData) => {
+            try {
+                console.log('\n[CREATED] Received payment:', paymentData);
+                await TableService.updateTable({ id: paymentData.tableId, status: 'free' });
             } catch (error) {
                 console.error('Error updating table status for new order:', error);
             }
@@ -30,14 +38,13 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.consumeQueue('open-close-table', async (tableData) => {
             try {
                 console.log('\n[UPDATED] Received table:', tableData);
-                // cập nhật trạng thái bàn
                 if (tableData.open) await TableService.updateTable({ id: tableData.open, status: 'free' });
                 if (tableData.close) await TableService.updateTable({ id: tableData.close, status: 'occupied' });
             } catch (error) {
                 console.error('Error updating table status for table open-close:', error);
             }
         });
-        
+
         console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
@@ -52,7 +59,6 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', require('./routes'));
 

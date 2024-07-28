@@ -24,7 +24,7 @@ class RabbitMQ {
         this.channel = null;
     }
 
-    async connect(connectionName = 'OrderService') {
+    async connect(connectionName = 'PaymentService') {
         try {
             if (!this.connection) {
                 this.connection = await amqp.connect(this.rabbitmqUrl, { clientProperties: { connection_name: connectionName } });
@@ -38,7 +38,7 @@ class RabbitMQ {
                     this.connection = null;
                     this.channel = null;
                 });
-
+                
                 this.channel = await this.connection.createChannel();
                 this.channel.on('error', (err) => {
                     console.error('RabbitMQ channel error:', err);
@@ -110,34 +110,6 @@ class RabbitMQ {
 
             console.log(`\nPublished message to exchange ${exchange}: ${messageBuffer.toString()}`);
         } catch (error) {
-            throw error;
-        }
-    }
-    
-    async consumeExchange(exchange, callback, routingKey = '') {
-        try {
-            if (!this.connection || !this.channel) {
-                await this.connect();
-            }
-
-            await this.assertExchange(exchange);
-
-            const q = await this.channel.assertQueue('', { exclusive: true });
-            await this.channel.bindQueue(q.queue, exchange, routingKey);
-
-            this.channel.consume(q.queue, (msg) => {
-                if (msg !== null) {
-                    const message = JSON.parse(msg.content.toString());
-                    callback(message);
-                    this.channel.ack(msg);
-                }
-            }, {
-                noAck: false
-            });
-
-            console.log(`\nListening for messages on exchange: ${exchange}`);
-        } catch (error) {
-            console.error('Error consuming messages:', error);
             throw error;
         }
     }

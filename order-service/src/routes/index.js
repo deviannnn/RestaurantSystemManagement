@@ -9,10 +9,16 @@ router.use(authenticate);
 
 // Orders CRUD
 router.post('/orders', authorize(["manager", "waiter"]), OrderController.createOrder);
-router.get('/orders', authorize(["manager", "waiter"]), OrderController.getAllOrders); // req.query.userId, status, fromDate, toDate ?
-router.get('/orders/:orderId', authorize(["manager", "waiter"]), OrderController.getOrder); // req.query.include ?
+
+// -> req.query.userId, status, fromDate, toDate ?
+router.get('/orders', authorize(["manager", "waiter"]), OrderController.getAllOrders); 
+
+// -> req.query.include ?
+router.get('/orders/:orderId', authorize(["manager", "waiter"]), OrderController.getOrder);
+
 router.put('/orders/:orderId', authorize(["admin", "manager"]), OrderController.updateOrder);
 router.delete('/orders/:orderId', authorize(["admin"]), OrderController.deleteOrder);
+
 
 // Orders Business Logic
 router.put('/orders/:orderId/change-table', authorize(["manager", "waiter"]), OrderController.changeTable);
@@ -23,7 +29,16 @@ router.put('/orders/:orderId/updated-items', authorize(["waiter"]), OrderControl
 
 // OrdersItems CRUD
 router.post('/orders-items', authorize(["admin", "manager"]), OrderItemController.createOrderItem);
-router.get('/orders-items/:orderItemId?', OrderItemController.getOrderItems);
+
+// -> req.query.orderId, status, fromDate, toDate ?
+router.get('/orders-items', authorize(["admin", "manager", "chef"]), OrderItemController.getAllOrderItems);
+
+// -> req.query.status, fromDate, toDate ?
+router.get('/orders-items/statistics', authorize(["admin", "manager", "chef"]), OrderItemController.getStatisticalOrderItems);
+
+// -> req.query.include ?
+router.get('/orders-items/:orderItemId', authorize(["admin", "manager", "chef"]), OrderItemController.getOrderItem);
+
 router.put('/orders-items/:orderItemId', authorize(["admin", "manager"]), OrderItemController.updateOrderItem);
 router.delete('/orders-items/:orderItemId', authorize(["admin", "manager"]), OrderItemController.deleteOrderItem);
 

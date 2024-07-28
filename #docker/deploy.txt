@@ -35,7 +35,6 @@
     docker node update --label-add api_gateway_node=true <node_name>
 
     docker node inspect <node_name> --format '{{ .Status.Addr }}'
-
 -------------------------------------------------------------------
 
 
@@ -52,3 +51,16 @@
     npx sequelize-cli db:seed:all
 
     npx sequelize-cli db:seed:undo:all
+-------------------------------------------------------------------
+
+
+# ordering 16 main services
+
+                    waiter_service
+                    kitchen_services
+    mysql           mail_service
+    rabbitmq    >   catalog_service     >   order_service   >   payment_service     >   api_gateway
+    redis           table_service
+                    user_service
+
+    7 services      6 services              1 service           1 service               1service

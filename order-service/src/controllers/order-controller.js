@@ -92,12 +92,13 @@ module.exports = {
     /** Expected Input
      * 
      * orderId = req.params
+     * include ? = req.query
      * 
      */
     async getOrder(req, res, next) {
         try {
             const { orderId } = req.params;
-            const include = req.query.include === 'true' || req.query.include === '1' ? true : false;
+            const include = req.query.include === 'false' || req.query.include === '0' ? false : true;
 
             const order = await OrderService.getOrderById(orderId, include);
             if (!order) return next(createError(404, 'Order not found'));
@@ -118,6 +119,7 @@ module.exports = {
      * 
      */
     getAllOrders: [
+        inputChecker.checkQueryDate,
         inputChecker.checkQueryGetAllOrders,
         async (req, res, next) => {
             try {
@@ -129,7 +131,12 @@ module.exports = {
                 res.status(200).json({
                     success: true,
                     message: 'Get all orders successfully!',
-                    data: { orders }
+                    data: {
+                        status: status ? status : "All Status",
+                        fromDate: fromDate ? fromDate : "Today",
+                        toDate: toDate ? toDate : "Today",
+                        orders
+                    }
                 });
             } catch (error) {
                 return next(error);

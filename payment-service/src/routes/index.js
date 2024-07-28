@@ -9,7 +9,8 @@ router.use(authenticate);
 
 // Payments CRUD
 router.post('/payments', authorize(["manager"]), PaymentController.createPayment);
-router.get('/payments/:paymentId?', authorize(["admin", "manager"]), PaymentController.getPayments);
+router.get('/payments', authorize(["admin", "manager"]), PaymentController.getAllPayments); // req.query.userId, fromDate, toDate ?
+router.get('/payments/:paymentId', authorize(["admin", "manager"]), PaymentController.getPayment); // req.query.include ?
 router.put('/payments/:paymentId', authorize(["admin"]), PaymentController.updatePayment);
 router.delete('/payments/:paymentId', authorize(["admin"]), PaymentController.deletePayment);
 

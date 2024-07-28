@@ -40,7 +40,7 @@ module.exports = {
     async getCategories(req, res, next) {
         try {
             const { categoryId } = req.params;
-            const include = req.query.include === 'true' || req.query.include === '1' ? true : false;
+            const include = req.query.include === 'false' || req.query.include === '0' ? false : true;
 
             if (categoryId) {
                 const category = await CategoryService.getCategoryById(categoryId, null, include);

@@ -9,13 +9,24 @@ const TableServiceTarget = `${process.env.TABLE_SERVICE_PROTOCAL}://${process.en
 const { OrderService, OrderItemService } = require('../services');
 
 module.exports = {
-    checkQueryGetAllOrders: [
+    checkQueryDate: [
         query('fromDate')
             .optional()
             .isISO8601().toDate().withMessage('fromDate Query must be a valid date in (yyyy-mm-dd) format'),
         query('toDate')
             .optional()
             .isISO8601().toDate().withMessage('toDate Query must be a valid date in (yyyy-mm-dd) format'),
+        validator
+    ],
+
+    checkQueryOrderItemStatus: [
+        query('status')
+            .optional()
+            .isIn(['pending', 'in_progress', 'finished', 'cancelled']).withMessage('status Query must be either \'pending\', \'in_progress\', \'finished\', or \'cancelled\''),
+        validator
+    ],
+
+    checkQueryGetAllOrders: [
         query('status')
             .optional()
             .isIn(['in_progress', 'finished', 'cancelled']).withMessage('status Query must be either \'in_progress\', \'finished\', or \'cancelled\''),

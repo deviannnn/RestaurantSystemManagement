@@ -100,7 +100,7 @@ services:
   catalog_service:
     image: deviannnn/restaurant:catalog
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -123,7 +123,7 @@ services:
   kitchen_service:
     image: deviannnn/restaurant:kitchen
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -143,7 +143,7 @@ services:
   mail_service:
     image: deviannnn/restaurant:mail
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -164,7 +164,7 @@ services:
   order_service:
     image: deviannnn/restaurant:order
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -195,7 +195,7 @@ services:
   payment_service:
     image: deviannnn/restaurant:payment
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -204,6 +204,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
       - PROD_DB_USERNAME=root
       - PROD_DB_PASSWORD=123456
       - PROD_DB_NAME=restaurant_system_payment
@@ -213,13 +216,14 @@ services:
     networks:
       - restaurant_net
     depends_on:
+      - rabbitmq_service
       - payment_mysql
       - order_service
 
   table_service:
     image: deviannnn/restaurant:table
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -242,7 +246,7 @@ services:
   user_service:
     image: deviannnn/restaurant:user
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -267,7 +271,7 @@ services:
   waiter_service:
     image: deviannnn/restaurant:waiter
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
@@ -285,7 +289,7 @@ services:
   api_gateway:
     image: deviannnn/restaurant:api-gateway
     deploy:
-      replicas: 1
+      replicas: 0
       update_config:
         parallelism: 2
         delay: 10s
