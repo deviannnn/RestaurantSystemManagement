@@ -133,7 +133,7 @@ class RabbitMQ {
                 noAck: false
             });
 
-            console.log(`\nListening for messages on exchange: ${exchange}`);
+            console.log(`Listening for messages on exchange: ${exchange}`);
         } catch (error) {
             console.error('Error consuming messages:', error);
             throw error;

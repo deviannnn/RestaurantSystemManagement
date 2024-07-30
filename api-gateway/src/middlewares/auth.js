@@ -1,11 +1,11 @@
 const createError = require('http-errors');
-const crypto = require('crypto');
+const murmurhash = require('murmurhash');
 const { extractToken, decodeToken } = require('../utils/jwt');
 
 const RedisService = require('../services/redis-service');
 
 const hashToken = (token) => {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return murmurhash.v3(token).toString(36);
 };
 
 const checkRevokedToken = async (req, res, next) => {
@@ -16,8 +16,7 @@ const checkRevokedToken = async (req, res, next) => {
         const hashedToken = hashToken(token);
         const isRevokedToken = await RedisService.getCacheData(hashedToken);
         if (isRevokedToken) return next(createError(401, 'Token has been revoked!'));
-        
-        req.token = token;
+
         return next();
     } catch (error) {
         return next(createError(401, ''));
@@ -25,7 +24,7 @@ const checkRevokedToken = async (req, res, next) => {
 };
 
 const authenticate = (req, res, next) => {
-    const token = req.token || extractToken(req);
+    const token = extractToken(req);
     if (!token) return next(createError(401, 'No token provided!'));
     try {
         decodeToken(token);

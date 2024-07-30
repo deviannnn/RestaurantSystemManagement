@@ -17,6 +17,7 @@ module.exports = {
             const includeCondition = include ? [{
                 model: Item,
                 as: 'items',
+                required: false,
                 where: active !== null ? { active } : {}
             }] : [];
 
@@ -36,6 +37,7 @@ module.exports = {
             const includeCondition = include ? [{
                 model: Item,
                 as: 'items',
+                required: false,
                 where: active !== null ? { active } : {}
             }] : [];
 

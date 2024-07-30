@@ -8,7 +8,7 @@ module.exports = {
      * { paymentId, surchargeId, value, amount } = req.body
      * 
      */
-    async createPaymentSurcharge(req, res) {
+    async createPaymentSurcharge(req, res, next) {
         try {
             const { paymentId, surchargeId, value, amount } = req.body;
             const newPaymentSurcharge = await PaymentSurchargeService.createPaymentSurcharge(paymentId, surchargeId, value, amount);
@@ -27,7 +27,7 @@ module.exports = {
      * psId ? = req.params
      * 
      */
-    async getPaymentSurcharges(req, res) {
+    async getPaymentSurcharges(req, res, next) {
         try {
             const { psId } = req.params;
             if (psId) {
@@ -57,7 +57,7 @@ module.exports = {
      * { paymentId, surchargeId, value, amount } = req.body
      * 
      */
-    async updatePaymentSurcharge(req, res) {
+    async updatePaymentSurcharge(req, res, next) {
         try {
             const { psId } = req.params;
             const { paymentId, surchargeId, value, amount } = req.body;
@@ -80,7 +80,7 @@ module.exports = {
      * psId = req.params
      * 
      */
-    async deletePaymentSurcharge(req, res) {
+    async deletePaymentSurcharge(req, res, next) {
         try {
             const { psId } = req.params;
 

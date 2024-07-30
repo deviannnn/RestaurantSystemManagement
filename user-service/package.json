@@ -21,6 +21,7 @@
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "~1.9.1",
+    "murmurhash": "^2.0.1",
     "mysql2": "^3.10.0",
     "redis": "^4.6.15",
     "sequelize": "^6.37.3"

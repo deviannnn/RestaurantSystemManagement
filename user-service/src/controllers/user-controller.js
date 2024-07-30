@@ -1,5 +1,5 @@
 const createError = require('http-errors');
-const crypto = require('crypto');
+const murmurhash = require('murmurhash');
 const bcrypt = require('bcrypt');
 const randomPassword = require('generate-password');
 
@@ -11,7 +11,7 @@ const { UserService, RabbitMQService, RedisService } = require('../services');
 const SALT_PASSWORD = 10;
 
 const hashToken = (token) => {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return murmurhash.v3(token).toString(36);
 };
 
 module.exports = {

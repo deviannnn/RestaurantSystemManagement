@@ -30,11 +30,17 @@
 
     docker service logs -f 
 
-    docker service scale user_service=0
+    docker service scale <service_name>=0
 
     docker node update --label-add api_gateway_node=true <node_name>
 
     docker node inspect <node_name> --format '{{ .Status.Addr }}'
+
+    docker service update --env-add PUBLIC_IP_GATEWAY= <service_name>
+
+    docker service inspect <service_name>
+
+    docker service update --image deviannnn/restaurant:api-gateway --force <service_name>
 -------------------------------------------------------------------
 
 

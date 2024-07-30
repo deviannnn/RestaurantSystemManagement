@@ -5,17 +5,7 @@ const jwtUtils = require('./utils/jwt');
 const WEBSOCKET_PORT = process.env.PORT || 5000;
 
 const wss = new WebSocket.Server({
-    port: WEBSOCKET_PORT,
-    verifyClient: (info, done) => {
-        const token = info.req.headers['authorization'];
-        if (!token) {
-            return done(false, 401, 'Unauthorized');
-        }
-
-        jwtUtils.verifyToken(token.replace('Bearer ', ''))
-            .then(() => done(true))
-            .catch(() => done(false, 401, 'Unauthorized'));
-    }
+    port: WEBSOCKET_PORT
 });
 
 wss.on('connection', (ws) => {
@@ -33,7 +23,7 @@ const RabbitMQ = require('./config/rabbitmq');
         await RabbitMQ.connect();
 
         await RabbitMQ.consumeExchange('new-order-created', (orderData) => {
-            console.log('\n[CREATED] Received order:', orderData);
+            console.log('[CREATED] Received order:', orderData);
             // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
             wss.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -43,7 +33,7 @@ const RabbitMQ = require('./config/rabbitmq');
         });
 
         await RabbitMQ.consumeQueue('order-to-kitchen', (orderData) => {
-            console.log(`\n[${orderData.type}] Received order:`, orderData);
+            console.log(`[${orderData.type}] Received order:`, orderData);
             // Gửi dữ liệu đơn hàng đến tất cả client đã kết nối qua WebSocket
             wss.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -60,4 +50,4 @@ const RabbitMQ = require('./config/rabbitmq');
     }
 })();
 
-console.log(`[WebSocketServer] KitchenService is listening on port: ${WEBSOCKET_PORT}`);
+console.log(`[WebSocketServer] KitchenService is listening on port: ${WEBSOCKET_PORT}\n`);

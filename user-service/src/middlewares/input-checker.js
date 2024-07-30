@@ -118,7 +118,7 @@ module.exports = {
     ],
 
     checkBodyRole: [
-        body('roleId').trim().notEmpty().withMessage('Role ID is required'),
+        body('roleId').notEmpty().withMessage('Role ID is required'),
         validator
     ],
 
@@ -126,6 +126,7 @@ module.exports = {
         const roleId = req.body.roleId;
 
         if (!roleId) return next();
+        if (req.user.roleId !== 1 && (roleId === 1 || roleId === 2)) return next(createError(400, 'Invalid input', { data: [{ field: 'roleId', value: roleId, detail: "You do not have the required permissions to access this role" }] }));
 
         try {
             const roleData = await RoleService.getRoleById(roleId, false);

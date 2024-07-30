@@ -5,7 +5,7 @@ const createRoute = (route, service) => {
     const hostname = process.env[`${service}_HOSTNAME`];
     const port = process.env[`${service}_PORT`];
 
-    return { route, protocol, target: `${protocol}://${hostname}:${port}` };
+    return { route, protocol, target: `http://${hostname}:${port}` };
 };
 
 module.exports = [
@@ -26,6 +26,6 @@ module.exports = [
     createRoute('/users', 'USER_SERVICE'),
     createRoute('/roles', 'USER_SERVICE'),
 
-    createRoute('/ws/kitchens', 'KITCHEN_SERVICE'),
-    createRoute('/ws/waiters', 'WAITER_SERVICE')
+    createRoute('/kitchens', 'KITCHEN_SERVICE'),
+    createRoute('/waiters', 'WAITER_SERVICE')
 ];

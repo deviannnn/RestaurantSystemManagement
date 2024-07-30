@@ -8,7 +8,7 @@ module.exports = {
      * { name, isPercent, value, description, active } = req.body
      * 
      */
-    async createSurcharge(req, res) {
+    async createSurcharge(req, res, next) {
         try {
             const { name, isPercent, value, description, active } = req.body;
             const newSurcharge = await SurchargeService.createSurcharge(name, isPercent, value, description, active);
@@ -57,7 +57,7 @@ module.exports = {
      * { name, isPercent, value, description, active } = req.body
      * 
      */
-    async updateSurcharge(req, res) {
+    async updateSurcharge(req, res, next) {
         try {
             const { surchargeId } = req.params;
             const { name, isPercent, value, description, active } = req.body;
@@ -80,7 +80,7 @@ module.exports = {
      * surchargeId = req.params
      * 
      */
-    async deleteSurcharge(req, res) {
+    async deleteSurcharge(req, res, next) {
         try {
             const { surchargeId } = req.params;
 

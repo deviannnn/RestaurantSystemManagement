@@ -37,16 +37,18 @@ services.forEach(({ route, protocol, target }) => {
   const proxyOptions = {
     target: isWebSocket ? target : `${target}${route}`,
     changeOrigin: true,
+    ws: isWebSocket,
     on: {
       error: (err, req, res) => {
         console.error('Proxy error:', err);
-        res.status(500).json({ success: false, error: { header: 'Proxy Error', message: err.message } });
+        if (!isWebSocket) {
+          res.status(500).json({ success: false, error: { header: 'Proxy Error', message: err.message } });
+        }
       },
-    },
-    ws: isWebSocket
+    }
   };
 
-  if (route === '/auth') {
+  if(route === '/auth') {
     app.use(`/api${route}`, createProxyMiddleware(proxyOptions));
   } else {
     app.use(`/api${route}`, checkRevokedToken, authenticate, createProxyMiddleware(proxyOptions));
@@ -103,5 +105,5 @@ const PORT = process.env.PORT || 5000;
 
 // Start Express server
 app.listen(PORT, () => {
-  console.log(`\nAPI Gateway is running on port ${PORT}`);
+  console.log(`API Gateway is running on port ${PORT}\n`);
 });

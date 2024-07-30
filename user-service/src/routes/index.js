@@ -22,7 +22,7 @@ router.post('/users/:userId/mail-active', authorize(["admin", "manager"]), UserC
 // CRUD users
 router.post('/users/register', authorize(["admin", "manager"]), UserController.register);
 router.get('/users/:userId?', authorize(["admin", "manager"]), UserController.getUsers);
-router.put('/users/:userId', authorize(["admin"]), UserController.updateUser);
+router.put('/users/:userId', authorize(["admin", "manager"]), UserController.updateUser);
 router.delete('/users/:userId', authorize(["admin"]), UserController.deleteUser);
 
 

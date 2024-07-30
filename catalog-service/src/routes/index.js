@@ -8,22 +8,22 @@ const { authenticate, authorize } = require('../middlewares/auth');
 router.use(authenticate);
 
 // Categories CRUD
-router.post('/categories', CategoryController.createCategory);
-router.get('/categories/:categoryId?', CategoryController.getCategories); // req.query.include ?
-router.put('/categories/:categoryId', CategoryController.updateCategory);
-router.delete('/categories/:categoryId', CategoryController.deleteCategory);
+router.post('/categories', authorize(["admin"]), CategoryController.createCategory);
+router.get('/categories/:categoryId?', authorize(["admin, manager, chef"]), CategoryController.getCategories); // req.query.include ?
+router.put('/categories/:categoryId', authorize(["admin"]), CategoryController.updateCategory);
+router.delete('/categories/:categoryId', authorize(["admin"]), CategoryController.deleteCategory);
 
 
 // Items Business Logic
-router.put('/items/:itemId/toggle-available', authorize(["manager", "chef"]), ItemController.toggleAvailable);
-router.get('/items/search', ItemController.getItemsSearch);
+router.put('/items/:itemId/toggle-available', authorize(["admin", "manager", "chef"]), ItemController.toggleAvailable);
+router.get('/items/search', authorize(["admin, manager, chef"]), ItemController.getItemsSearch);
 router.post('/items/batch', ItemController.batchValidator);
 
 // Items CRUD
-router.post('/items', ItemController.createItem);
-router.get('/items/:itemId?', ItemController.getItems);
-router.put('/items/:itemId', ItemController.updateItem);
-router.delete('/items/:itemId', ItemController.deleteItem);
+router.post('/items', authorize(["admin"]), ItemController.createItem);
+router.get('/items/:itemId?', authorize(["admin, manager, chef"]), ItemController.getItems);
+router.put('/items/:itemId', authorize(["admin"]), ItemController.updateItem);
+router.delete('/items/:itemId', authorize(["admin"]), ItemController.deleteItem);
 
 
 // Catalog Business Logic
