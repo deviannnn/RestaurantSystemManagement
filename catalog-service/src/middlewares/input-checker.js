@@ -1,44 +1,89 @@
 const createError = require('http-errors');
-const { check } = require('express-validator');
-const validator = require('./vaildator');
+const { body } = require('express-validator');
+const validator = require('./validator');
 
-const { ItemService, CategoryService } = require('../services');
+const { CategoryService } = require('../services');
 
 module.exports = {
     checkBodyCreateCategory: [
-        check('name').notEmpty().isString().withMessage('Category Name must be a string'),
-        check('description').optional().notEmpty().isString().withMessage('Category Description must be a string'),
-        check('active').optional().notEmpty().isBoolean().withMessage('Category Active status must be a boolean'),
+        body('name')
+            .notEmpty().withMessage('Category\'s Name is required')
+            .isString().withMessage('Category\'s Name must be a string'),
+        body('description')
+            .optional()
+            .notEmpty().withMessage('Category\'s Description is required')
+            .isString().withMessage('Category\'s Description must be a string'),
+        body('active')
+            .optional()
+            .notEmpty().withMessage('Category\'s Active status is required')
+            .isBoolean().withMessage('Category\'s Active status must be a boolean value'),
         validator,
     ],
 
     checkBodyUpdateCategory: [
-        check('name').optional().notEmpty().isString().withMessage('Category Name must be a string'),
-        check('description').optional().notEmpty().isString().withMessage('Category Description must be a string'),
-        check('active').optional().notEmpty().isBoolean().withMessage('Category Active status must be a boolean'),
+        body('name')
+            .optional()
+            .notEmpty().withMessage('Category\'s Name is required')
+            .isString().withMessage('Category\'s Name must be a string'),
+        body('description')
+            .optional()
+            .notEmpty().withMessage('Category\'s Description is required')
+            .isString().withMessage('Category\'s Description must be a string'),
+        body('active')
+            .optional()
+            .notEmpty().withMessage('Category\'s Active status is required')
+            .isBoolean().withMessage('Category\'s Active status must be a boolean value'),
         validator
     ],
 
     checkBodyCreateItem: [
-        check('name').notEmpty().isString().withMessage('Item Name must be a string'),
-        check('price').notEmpty().isFloat({ min: 0 }).withMessage('Item Price must be a real number > 0'),
-        check('description').optional().notEmpty().isString().withMessage('Item Description must be a string'),
-        check('available').optional().notEmpty().isBoolean().withMessage('Item Available status must be a boolean'),
-        check('active').optional().notEmpty().isBoolean().withMessage('Item Active status must be a boolean'),
+        body('name')
+            .notEmpty().withMessage('Item\'s Name is required')
+            .isString().withMessage('Item\'s Name must be a string'),
+        body('price')
+            .notEmpty().withMessage('Item\'s Price is required')
+            .isFloat({ min: 0 }).withMessage('Item\'s Price must be a real number >= 0'),
+        body('description')
+            .optional()
+            .notEmpty().withMessage('Item\'s Description is required')
+            .isString().withMessage('Item\'s Description must be a string'),
+        body('available')
+            .optional()
+            .notEmpty().withMessage('Item\'s Available status is required')
+            .isBoolean().withMessage('Item\'s Available status must be a boolean value'),
+        body('active')
+            .optional()
+            .notEmpty().withMessage('Item\'s Active status is required')
+            .isBoolean().withMessage('Item\'s Active status must be a boolean value'),
         validator,
     ],
 
     checkBodyUpdateItem: [
-        check('name').optional().notEmpty().isString().withMessage('Item Name must be a string'),
-        check('price').optional().notEmpty().isFloat({ min: 0 }).withMessage('Item Price must be a real number > 0'),
-        check('description').optional().notEmpty().isString().withMessage('Item Description must be a string'),
-        check('available').optional().notEmpty().isBoolean().withMessage('Item Available status must be a boolean'),
-        check('active').optional().notEmpty().isBoolean().withMessage('Item Active status must be a boolean'),
+        body('name')
+            .optional()
+            .notEmpty().withMessage('Item\'s Name is required')
+            .isString().withMessage('Item\'s Name must be a string'),
+        body('price')
+            .optional()
+            .notEmpty().withMessage('Item\'s Price is required')
+            .isFloat({ min: 0 }).withMessage('Item\'s Price must be a real number >= 0'),
+        body('description')
+            .optional()
+            .notEmpty().withMessage('Item\'s Description is required')
+            .isString().withMessage('Item\'s Description must be a string'),
+        body('available')
+            .optional()
+            .notEmpty().withMessage('Item\'s Available status is required')
+            .isBoolean().withMessage('Item\'s Available status must be a boolean value'),
+        body('active')
+            .optional()
+            .notEmpty().withMessage('Item\'s Active status is required')
+            .isBoolean().withMessage('Item\'s Active status must be a boolean value'),
         validator
     ],
 
     checkBodyCaterogy: [
-        check('categoryId').notEmpty().withMessage('Category ID cannot be empty'),
+        body('categoryId').notEmpty().withMessage('Category ID is required'),
         validator
     ],
 
@@ -61,7 +106,7 @@ module.exports = {
     },
 
     checkItemIds: [
-        check('itemIds').isArray({ min: 1 }).withMessage('ItemIds must be a non-empty array'),
+        body('itemIds').isArray({ min: 1 }).withMessage('ItemIds must be a non-empty array'),
         validator
     ],
 };

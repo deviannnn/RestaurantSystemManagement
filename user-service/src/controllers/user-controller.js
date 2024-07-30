@@ -301,22 +301,24 @@ module.exports = {
 
     /** Expected Input
      * 
-     * { password, confirmPassword } = req.body
+     * { oldPassword, newPassword, confirmPassword } = req.body
      * 
      */
     changePassword: [
         inputChecker.checkBodyChangePassword,
         async (req, res, next) => {
             try {
-                const hashPassword = await bcrypt.hash(req.body.password, SALT_PASSWORD);
-
-                const user = await UserService.updateUser({ id: req.user.id, password: hashPassword });
+                const user = await UserService.getUserById(req.user.id);
                 if (!user) return next(createError(404, 'User\'s account not found'));
+                if (!bcrypt.compareSync(oldPassword, user.password)) return next(createError(400, 'Invalid input', { data: [{ field: 'oldPassword', value: oldPassword, detail: "Old password does not match" }] }));
+
+                const hashPassword = await bcrypt.hash(req.body.newPassword, SALT_PASSWORD);
+                const updatedUser = await UserService.updateUser({ id: req.user.id, password: hashPassword });
 
                 res.status(200).json({
                     success: true,
                     message: 'Change password successfully!',
-                    data: { user }
+                    data: { user: updatedUser }
                 });
             } catch (error) {
                 return next(error);

@@ -1,17 +1,16 @@
 require('dotenv').config();
 const createError = require('http-errors');
 const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
-const TableService = require('./services/table-service');
+const { attachContainerName } = require('./middlewares/attach-container');
 
 // Connect to database
 const connectdb = require('./config/connectdb');
 connectdb();
 
 // Connect to rabbitmq
+const TableService = require('./services/table-service');
 const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
@@ -58,7 +57,7 @@ const app = express();
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(attachContainerName);
 
 app.use('/', require('./routes'));
 

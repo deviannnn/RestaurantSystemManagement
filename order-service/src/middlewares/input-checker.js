@@ -97,7 +97,7 @@ module.exports = {
             .notEmpty().withMessage('Item ID is required'),
         body('items.*.quantity')
             .notEmpty().withMessage('Item\'s Quantity is required')
-            .isInt().withMessage('Item\'s Quantity must be an integer > 0'),
+            .isInt({ min: 0 }).withMessage('Item\'s Quantity must be an integer > 0'),
         body('items.*.note')
             .optional()
             .trim()
@@ -129,7 +129,7 @@ module.exports = {
         body('orderItems.*.quantity')
             .optional()
             .notEmpty().withMessage('OrderItem\'s Quantity is required')
-            .isInt().withMessage('OrderItem\'s Quantity must be an integer > 0'),
+            .isInt({ min: 0 }).withMessage('OrderItem\'s Quantity must be an integer > 0'),
         body('orderItems.*.note')
             .optional()
             .trim()

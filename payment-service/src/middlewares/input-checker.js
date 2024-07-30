@@ -1,7 +1,7 @@
 const axios = require('axios');
 const createError = require('http-errors');
 const { body, query } = require('express-validator');
-const validator = require('./vaildator');
+const validator = require('./validator');
 
 const OrderServiceTarget = `${process.env.ORDER_SERVICE_PROTOCAL}://${process.env.ORDER_SERVICE_HOSTNAME}:${process.env.ORDER_SERVICE_PORT}`;
 const SurchargeService = require('../services/surcharge-service');

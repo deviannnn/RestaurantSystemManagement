@@ -1,6 +1,6 @@
 const createError = require('http-errors');
 const { body } = require('express-validator');
-const validator = require('./vaildator');
+const validator = require('./validator');
 
 const { UserService, RoleService } = require('../services');
 
@@ -14,7 +14,7 @@ module.exports = {
             .optional()
             .trim()
             .notEmpty().withMessage('Role\'s Active status is required')
-            .isBoolean().withMessage('Role\'s Active status must be a boolean'),
+            .isBoolean().withMessage('Role\'s Active status must be a boolean value'),
         validator
     ],
 
@@ -28,7 +28,7 @@ module.exports = {
             .optional()
             .trim()
             .notEmpty().withMessage('Role\'s Active status is required')
-            .isBoolean().withMessage('Role\'s Active status must be a boolean'),
+            .isBoolean().withMessage('Role\'s Active status must be a boolean value'),
         validator
     ],
 
@@ -41,7 +41,7 @@ module.exports = {
         body('gender')
             .trim()
             .notEmpty().withMessage('User\'s Gender is required')
-            .isBoolean().withMessage('User\'s Gender must be a boolean'),
+            .isBoolean().withMessage('User\'s Gender must be a boolean value'),
         body('nationalId')
             .trim()
             .notEmpty().withMessage('User\'s NationalID is required')
@@ -83,7 +83,7 @@ module.exports = {
             .optional()
             .trim()
             .notEmpty().withMessage('User\'s Gender is required')
-            .isBoolean().withMessage('User\'s Gender must be a boolean'),
+            .isBoolean().withMessage('User\'s Gender must be a boolean value'),
         body('nationalId')
             .optional()
             .trim()
@@ -148,10 +148,14 @@ module.exports = {
     ],
 
     checkBodyChangePassword: [
-        body('password')
+        body('oldPassword')
             .trim()
-            .notEmpty().withMessage('Password is required')
-            .isString().withMessage('Password must be a string')
+            .notEmpty().withMessage('Old password is required')
+            .isString().withMessage('Old password must be a string'),
+        body('newPassword')
+            .trim()
+            .notEmpty().withMessage('New password is required')
+            .isString().withMessage('New password must be a string')
             .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
         body('confirmPassword')
             .trim()
