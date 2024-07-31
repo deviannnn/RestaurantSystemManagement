@@ -30,17 +30,23 @@
 
     docker service logs -f 
 
-    docker service scale <service_name>=0
+    docker service scale <service_id>=0
 
-    docker node update --label-add api_gateway_node=true <node_name>
 
-    docker node inspect <node_name> --format '{{ .Status.Addr }}'
+    ## labels node
 
-    docker service update --env-add PUBLIC_IP_GATEWAY= <service_name>
+        docker node inspect <node_id> --format '{{ .Spec.Labels }}'
 
-    docker service inspect <service_name>
+        docker node update --label-add key=value <node_id>
 
-    docker service update --image deviannnn/restaurant:api-gateway --force <service_name>
+
+    ## update service
+
+        docker service inspect <service_id>
+
+        docker service update --env-add PUBLIC_IP_GATEWAY= <service_id>
+
+        docker service update --image deviannnn/restaurant:<tag> --force <service_id>
 -------------------------------------------------------------------
 
 
@@ -69,4 +75,30 @@
     redis           table_service
                     user_service
 
-    7 services      6 services              1 service           1 service               1service
+    7 services      6 services              1 service           1 service               1 service
+
+
+    ## scripts
+
+        sudo apt update
+        sudo apt install -y docker.io
+        sudo su
+
+        docker swarm init --advertise-addr <ip>
+
+        docker node ls
+        docker node update --label-add gateway=true <node_id>
+
+        nano docker-compose.yml
+        docker stack deploy -c docker-compose.yml rs
+
+        docker service scale rs_waiter_service=1 rs_kitchen_service=1 rs_mail_service=1 rs_catalog_service=1 rs_table_service=1 rs_user_service=1
+        docker service scale rs_order_service=1
+        docker service scale rs_payment_service=1
+        docker service scale rs_api_gateway=1
+
+        docker service update --env-add PUBLIC_IP_GATEWAY=<ip> rs_mail_service
+
+        docker container exec -it <container_id> npx sequelize-cli db:migrate
+        docker container exec -it <container_id> npx sequelize-cli db:seed:all
+

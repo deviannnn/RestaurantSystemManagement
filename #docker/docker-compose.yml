@@ -5,6 +5,23 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - MYSQL_DATABASE=restaurant_system_catalog
       - MYSQL_ROOT_PASSWORD=123456
@@ -19,6 +36,23 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - MYSQL_DATABASE=restaurant_system_order
       - MYSQL_ROOT_PASSWORD=123456
@@ -33,6 +67,23 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - MYSQL_DATABASE=restaurant_system_payment
       - MYSQL_ROOT_PASSWORD=123456
@@ -47,6 +98,23 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - MYSQL_DATABASE=restaurant_system_table
       - MYSQL_ROOT_PASSWORD=123456
@@ -61,6 +129,23 @@ services:
     image: mysql:9
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - MYSQL_DATABASE=restaurant_system_user
       - MYSQL_ROOT_PASSWORD=123456
@@ -75,6 +160,23 @@ services:
     image: rabbitmq:3.13-management-alpine
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=admin
@@ -90,6 +192,23 @@ services:
     image: redis:7.2.5-alpine
     deploy:
       replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     ports:
       - "6379:6379"
     volumes:
@@ -101,11 +220,23 @@ services:
     image: deviannnn/restaurant:catalog
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -124,11 +255,23 @@ services:
     image: deviannnn/restaurant:kitchen
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -144,15 +287,26 @@ services:
     image: deviannnn/restaurant:mail
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
-      - PUBLIC_IP_GATEWAY=
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
@@ -165,11 +319,23 @@ services:
     image: deviannnn/restaurant:order
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -196,11 +362,23 @@ services:
     image: deviannnn/restaurant:payment
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
-      restart_policy:
-        condition: on-failure
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -224,9 +402,23 @@ services:
     image: deviannnn/restaurant:table
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -247,9 +439,23 @@ services:
     image: deviannnn/restaurant:user
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -272,9 +478,23 @@ services:
     image: deviannnn/restaurant:waiter
     deploy:
       replicas: 0
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PORT=5000
@@ -290,9 +510,27 @@ services:
     image: deviannnn/restaurant:api-gateway
     deploy:
       replicas: 0
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.gateway == true
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       update_config:
         parallelism: 2
         delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
     environment:
       - NODE_ENV=production
       - PROD_REDIS_HOST=redis_service
@@ -313,7 +551,7 @@ services:
       - KITCHEN_SERVICE_PORT=5000
       - WAITER_SERVICE_PORT=5000
     ports:
-      - "5000:5000"
+      - "80:5000"
     networks:
       - restaurant_net
     depends_on:
