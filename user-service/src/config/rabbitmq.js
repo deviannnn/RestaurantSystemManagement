@@ -38,11 +38,17 @@ class RabbitMQ {
                     this.connection = null;
                     this.channel = null;
                 });
-
+            }
+            if (!this.channel) {
                 this.channel = await this.connection.createChannel();
-                this.channel.on('error', (err) => {
+                this.channel.on('error', async (err) => {
                     console.error('RabbitMQ channel error:', err);
                     this.channel = null;
+                    try {
+                        await this.connect(connectionName);
+                    } catch (reconnectError) {
+                        console.error('Failed to reconnect to RabbitMQ after channel error:', reconnectError);
+                    }
                 });
                 this.channel.on('close', () => {
                     console.log('RabbitMQ channel closed');

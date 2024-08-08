@@ -2,12 +2,9 @@ require('dotenv').config();
 const createError = require('http-errors');
 const express = require('express');
 const logger = require('morgan');
+const connectdb = require('./config/connectdb');
 
 const { attachContainerName } = require('./middlewares/attach-container');
-
-// Connect to database
-const connectdb = require('./config/connectdb');
-connectdb();
 
 // Connect to rabbitmq
 const TableService = require('./services/table-service');
@@ -43,8 +40,6 @@ const RabbitMQ = require('./config/rabbitmq');
                 console.error('Error updating table status for table open-close:', error);
             }
         });
-
-        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
         console.error('[ERROR] Failed to connect to RabbitMQ -', error);
@@ -59,6 +54,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(attachContainerName);
 
+// Health check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        // check database connection
+        await connectdb();
+
+        // check rabbitmq connection
+        if (RabbitMQ.connection && RabbitMQ.channel) {
+            console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
+        } else {
+            console.error('RabbitMQ connection is not ready');
+            throw new Error('RabbitMQ connection is not ready');
+        }
+
+        res.status(200).send('Healthy');
+    } catch (error) {
+        console.error('Health check failed:', error);
+        res.status(500).send('Unhealthy');
+    }
+});
 app.use('/', require('./routes'));
 
 // catch 404 and forward to error handler

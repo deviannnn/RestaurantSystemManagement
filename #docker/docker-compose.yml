@@ -4,6 +4,9 @@ services:
   catalog_mysql:
     image: mysql:9
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -31,10 +34,19 @@ services:
       - catalog-db-data:/var/lib/mysql
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   order_mysql:
     image: mysql:9
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -62,10 +74,19 @@ services:
       - order-db-data:/var/lib/mysql
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   payment_mysql:
     image: mysql:9
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -93,10 +114,19 @@ services:
       - payment-db-data:/var/lib/mysql
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   table_mysql:
     image: mysql:9
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -124,10 +154,19 @@ services:
       - table-db-data:/var/lib/mysql
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   user_mysql:
     image: mysql:9
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -155,10 +194,19 @@ services:
       - user-db-data:/var/lib/mysql
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   rabbitmq_service:
     image: rabbitmq:3.13-management-alpine
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -187,10 +235,19 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   redis_service:
     image: redis:7.2.5-alpine
     deploy:
+      placement:
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -215,6 +272,12 @@ services:
       - redis-data:/var/lib/redis
     networks:
       - restaurant_net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 10s
 
   catalog_service:
     image: deviannnn/restaurant:catalog
@@ -247,9 +310,13 @@ services:
       - PROD_DB_HOSTNAME=catalog_mysql
     networks:
       - restaurant_net
-    depends_on:
-      - redis_service
-      - catalog_mysql
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   kitchen_service:
     image: deviannnn/restaurant:kitchen
@@ -280,8 +347,6 @@ services:
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
 
   mail_service:
     image: deviannnn/restaurant:mail
@@ -312,8 +377,13 @@ services:
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   order_service:
     image: deviannnn/restaurant:order
@@ -352,11 +422,13 @@ services:
       - TABLE_SERVICE_PORT=5000
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
-      - order_mysql
-      - catalog_service
-      - table_service
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   payment_service:
     image: deviannnn/restaurant:payment
@@ -393,10 +465,13 @@ services:
       - ORDER_SERVICE_PORT=5000
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
-      - payment_mysql
-      - order_service
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   table_service:
     image: deviannnn/restaurant:table
@@ -431,9 +506,13 @@ services:
       - PROD_DB_HOSTNAME=table_mysql
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
-      - table_mysql
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   user_service:
     image: deviannnn/restaurant:user
@@ -469,10 +548,13 @@ services:
       - PROD_DB_HOSTNAME=user_mysql
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
-      - redis_service
-      - user_mysql
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
 
   waiter_service:
     image: deviannnn/restaurant:waiter
@@ -503,17 +585,14 @@ services:
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
     networks:
       - restaurant_net
-    depends_on:
-      - rabbitmq_service
 
   api_gateway:
     image: deviannnn/restaurant:api-gateway
     deploy:
-      replicas: 0
       placement:
         constraints:
-          - node.role == manager
-          - node.labels.gateway == true
+          - node.role == worker
+      replicas: 0
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -554,27 +633,46 @@ services:
       - "80:5000"
     networks:
       - restaurant_net
-    depends_on:
-      - redis_service
-      - catalog_service
-      - mail_service
-      - order_service
-      - payment_service
-      - table_service
-      - user_service
-      - kitchen_service
-      - waiter_service
 
   viz:
     image: dockersamples/visualizer
-    ports:
-      - "8080:8080"
     deploy:
       placement:
         constraints:
           - node.role == manager
+    ports:
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - restaurant_net
+
+  prometheus:
+    image: prom/prometheus
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - restaurant_net
+
+  grafana:
+    image: grafana/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
     networks:
       - restaurant_net
 
@@ -586,6 +684,7 @@ volumes:
   user-db-data:
   rabbitmq-data:
   redis-data:
+  grafana-storage:
 
 
 networks:

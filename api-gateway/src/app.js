@@ -28,7 +28,7 @@ app.use(cors()); // Enable CORS
 app.use(helmet()); // Add security headers
 app.use(morgan("combined")); // Log HTTP requests
 app.disable("x-powered-by"); // Hide Express server information
-app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
+// app.use(limiter); // Apply the rate limit and timeout middleware to the proxy
 
 // Set up proxy middleware for each microservice
 services.forEach(({ route, protocol, target }) => {

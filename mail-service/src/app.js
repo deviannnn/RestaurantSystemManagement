@@ -11,22 +11,24 @@ const RabbitMQ = require('./config/rabbitmq');
     try {
         await RabbitMQ.connect();
 
-        await RabbitMQ.consumeQueue('send-mail', (mailData) => {
+        await RabbitMQ.consumeQueue('send-mail', async (mailData) => {
             console.log('\nReceived mail:', mailData);
 
             const { type, fullName, gender, gmail, password, route } = mailData;
-            
-            let mailComposer;
-            if (type === 'active') {
-                mailComposer = MailService.composeActiveMail(fullName, gender, gmail, password, route);
-            } else if (type === 'resetpassword') {
-                mailComposer = MailService.composeResetPasswordMail(fullName, gender, gmail, password);
+
+            try {
+                let mailComposer;
+                if (type === 'active') {
+                    mailComposer = MailService.composeActiveMail(fullName, gender, gmail, password, route);
+                } else if (type === 'resetpassword') {
+                    mailComposer = MailService.composeResetPasswordMail(fullName, gender, gmail, password);
+                }
+
+                await MailService.sendEmail(mailComposer);
+            } catch (error) {
+                console.error('Error sending mail:', error);
             }
-
-            MailService.sendEmail(mailComposer);
         });
-
-        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
         console.error('[ERROR] Failed to connect to RabbitMQ -', error);
@@ -41,7 +43,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-//app.use('/api', require('./routes'));
+// Health check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        // check rabbitmq connection
+        if (RabbitMQ.connection && RabbitMQ.channel) {
+            console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
+        } else {
+            console.error('RabbitMQ connection is not ready');
+            throw new Error('RabbitMQ connection is not ready');
+        }
+
+        // check email sending capability
+        try {
+            await MailService.verifySMTPConnection();
+            console.log('SMTP connection verified');
+        } catch (emailError) {
+            console.error('SMTP connection failed:', emailError);
+            throw new Error('SMTP connection is not ready');
+        }
+
+        res.status(200).send('Healthy');
+    } catch (error) {
+        console.error('Health check failed:', error);
+        res.status(500).send('Unhealthy');
+    }
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) { next(createError(404)); });

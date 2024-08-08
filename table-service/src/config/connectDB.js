@@ -11,6 +11,6 @@ module.exports = async () => {
     } catch (error) {
         console.error('[ERROR] Config -', config);
         console.error('[ERROR] Failed to connect to MySQL -', error);
-        process.exit(1);
+        throw new Error('MySQL connection is not ready');
     }
 }

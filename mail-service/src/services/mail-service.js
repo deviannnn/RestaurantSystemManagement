@@ -15,6 +15,16 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+const verifySMTPConnection = async () => {
+    try {
+        await transporter.verify();
+        console.log('SMTP connection verified.');
+    } catch (error) {
+        console.error('SMTP connection verification failed:', error.message);
+        throw new Error('SMTP connection is not ready.');
+    }
+};
+
 const composeActiveMail = (fullName, gender, gmail, password, route) => {
     try {
         const replacements = {
@@ -38,7 +48,7 @@ const composeActiveMail = (fullName, gender, gmail, password, route) => {
         };
     } catch (error) {
         console.log(error.message);
-        throw new Error('Error generate active mail.');
+        throw new Error('Fail to generate Active mail');
     }
 }
 
@@ -63,7 +73,7 @@ const composeResetPasswordMail = (fullName, gender, gmail, password) => {
         };
     } catch (error) {
         console.log(error.message);
-        throw new Error('Error generate active mail.');
+        throw new Error('Fail to generate ResetPassword mail');
     }
 }
 
@@ -79,11 +89,10 @@ const sendEmail = async (mailComposer) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        return { success: true };
     } catch (error) {
-        return { success: false, message: `Error sending email: ${error.message}` };
+        throw new Error('Fail to send mail');
     }
 };
 
 
-module.exports = { sendEmail, composeActiveMail, composeResetPasswordMail };
+module.exports = { sendEmail, composeActiveMail, composeResetPasswordMail, verifySMTPConnection };
