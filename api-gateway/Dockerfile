@@ -5,6 +5,7 @@ WORKDIR /restaurant/backend/api-gateway
 COPY package*.json ./
 
 RUN npm install
+RUN apk add --no-cache curl
 
 COPY . .
 

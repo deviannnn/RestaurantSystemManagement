@@ -37,9 +37,9 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   order_mysql:
     image: mysql:9
@@ -77,9 +77,9 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   payment_mysql:
     image: mysql:9
@@ -117,9 +117,9 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   table_mysql:
     image: mysql:9
@@ -157,9 +157,9 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   user_mysql:
     image: mysql:9
@@ -197,9 +197,9 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   rabbitmq_service:
     image: rabbitmq:3.13-management-alpine
@@ -238,9 +238,9 @@ services:
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
 
   redis_service:
     image: redis:7.2.5-alpine
@@ -275,10 +275,10 @@ services:
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
+      timeout: 10s
       retries: 3
       start_period: 30s
-      timeout: 10s
-
+      
   catalog_service:
     image: deviannnn/restaurant:catalog
     deploy:
@@ -316,7 +316,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   kitchen_service:
     image: deviannnn/restaurant:kitchen
@@ -375,6 +374,7 @@ services:
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PUBLIC_IP_GATEWAY=ec2-52-74-233-246.ap-southeast-1.compute.amazonaws.com
     networks:
       - restaurant_net
     healthcheck:
@@ -383,7 +383,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   order_service:
     image: deviannnn/restaurant:order
@@ -428,7 +427,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   payment_service:
     image: deviannnn/restaurant:payment
@@ -471,7 +469,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   table_service:
     image: deviannnn/restaurant:table
@@ -512,7 +509,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   user_service:
     image: deviannnn/restaurant:user
@@ -554,7 +550,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      start_interval: 5s
 
   waiter_service:
     image: deviannnn/restaurant:waiter
@@ -589,9 +584,6 @@ services:
   api_gateway:
     image: deviannnn/restaurant:api-gateway
     deploy:
-      placement:
-        constraints:
-          - node.role == worker
       replicas: 0
       restart_policy:
         condition: on-failure
@@ -631,6 +623,7 @@ services:
       - WAITER_SERVICE_PORT=5000
     ports:
       - "80:5000"
+      - "443:5000"
     networks:
       - restaurant_net
 
@@ -647,35 +640,6 @@ services:
     networks:
       - restaurant_net
 
-  prometheus:
-    image: prom/prometheus
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - restaurant_net
-
-  grafana:
-    image: grafana/grafana
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    networks:
-      - restaurant_net
-
 volumes:
   catalog-db-data:
   order-db-data:
@@ -684,7 +648,6 @@ volumes:
   user-db-data:
   rabbitmq-data:
   redis-data:
-  grafana-storage:
 
 
 networks:

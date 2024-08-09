@@ -81,7 +81,7 @@
     ## scripts
 
         sudo apt update
-        sudo apt install -y docker.io
+        sudo apt-get install -y docker.io curl
         sudo su
 
         docker swarm init --advertise-addr <ip>
@@ -89,6 +89,7 @@
         docker node ls
         docker node update --label-add gateway=true <node_id>
 
+        nano prometheus.yml
         nano docker-compose.yml
         docker stack deploy -c docker-compose.yml rs
 

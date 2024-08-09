@@ -37,3 +37,37 @@ scrape_configs:
   - job_name: 'api_gateway'
     static_configs:
       - targets: ['api_gateway:5000']
+
+
+
+
+  prometheus:
+    image: prom/prometheus
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - restaurant_net
+
+  grafana:
+    image: grafana/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - restaurant_net
+
+      grafana-storage:
