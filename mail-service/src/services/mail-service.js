@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 const verifySMTPConnection = async () => {
     try {
         await transporter.verify();
-        console.log('SMTP connection verified.');
+        console.log('SMTP connection verified');
     } catch (error) {
         console.error('SMTP connection verification failed:', error.message);
         throw new Error('SMTP connection is not ready.');

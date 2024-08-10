@@ -55,13 +55,7 @@ app.get('/health', async (req, res) => {
         }
 
         // check email sending capability
-        try {
-            await MailService.verifySMTPConnection();
-            console.log('SMTP connection verified');
-        } catch (emailError) {
-            console.error('SMTP connection failed:', emailError);
-            throw new Error('SMTP connection is not ready');
-        }
+        await MailService.verifySMTPConnection();
 
         res.status(200).send('Healthy');
     } catch (error) {

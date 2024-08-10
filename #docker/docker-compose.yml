@@ -4,9 +4,16 @@ services:
   catalog_mysql:
     image: mysql:9
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 1024M
+        reservations:
+          cpus: '0.3'
+          memory: 384M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -15,7 +22,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -39,14 +46,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   order_mysql:
     image: mysql:9
     deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1536M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -55,7 +68,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -79,14 +92,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   payment_mysql:
     image: mysql:9
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 384M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -95,7 +114,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -119,14 +138,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   table_mysql:
     image: mysql:9
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -135,7 +160,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -159,14 +184,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   user_mysql:
     image: mysql:9
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -175,7 +206,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -199,14 +230,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   rabbitmq_service:
     image: rabbitmq:3.13-management-alpine
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 1024M
+        reservations:
+          cpus: '0.3'
+          memory: 512M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -215,7 +252,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -240,14 +277,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
 
   redis_service:
     image: redis:7.2.5-alpine
     deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 1536M
+        reservations:
+          cpus: '0.3'
+          memory: 512M
       placement:
-        constraints:
-          - node.role == worker
+        preferences:
+          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: any
@@ -256,7 +299,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -277,12 +320,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
       
   catalog_service:
     image: deviannnn/restaurant:catalog
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -290,7 +336,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -312,82 +358,18 @@ services:
       - restaurant_net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-  kitchen_service:
-    image: deviannnn/restaurant:kitchen
-    deploy:
-      replicas: 0
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-      update_config:
-        parallelism: 2
-        delay: 10s
-        failure_action: rollback
-        monitor: 30s
-        max_failure_ratio: 0.1
-        order: start-first
-      rollback_config:
-        parallelism: 2
-        delay: 0s
-        failure_action: continue
-        monitor: 0s
-        max_failure_ratio: 0.2
-        order: stop-first
-    environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - PROD_RABBITMQ_USERNAME=admin
-      - PROD_RABBITMQ_PASSWORD=admin
-      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
-    networks:
-      - restaurant_net
-
-  mail_service:
-    image: deviannnn/restaurant:mail
-    deploy:
-      replicas: 0
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-      update_config:
-        parallelism: 2
-        delay: 10s
-        failure_action: rollback
-        monitor: 30s
-        max_failure_ratio: 0.1
-        order: start-first
-      rollback_config:
-        parallelism: 2
-        delay: 0s
-        failure_action: continue
-        monitor: 0s
-        max_failure_ratio: 0.2
-        order: stop-first
-    environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - PROD_RABBITMQ_USERNAME=admin
-      - PROD_RABBITMQ_PASSWORD=admin
-      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
-      - PUBLIC_IP_GATEWAY=ec2-52-74-233-246.ap-southeast-1.compute.amazonaws.com
-    networks:
-      - restaurant_net
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   order_service:
     image: deviannnn/restaurant:order
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -395,7 +377,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -423,15 +405,18 @@ services:
       - restaurant_net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
   payment_service:
     image: deviannnn/restaurant:payment
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -439,7 +424,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -465,15 +450,18 @@ services:
       - restaurant_net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
   table_service:
     image: deviannnn/restaurant:table
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -481,7 +469,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -505,15 +493,18 @@ services:
       - restaurant_net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
   user_service:
     image: deviannnn/restaurant:user
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -521,7 +512,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -546,15 +537,18 @@ services:
       - restaurant_net
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
-      interval: 1m30s
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
 
-  waiter_service:
-    image: deviannnn/restaurant:waiter
+  kitchen_service:
+    image: deviannnn/restaurant:kitchen
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 768M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -562,7 +556,7 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
@@ -581,10 +575,14 @@ services:
     networks:
       - restaurant_net
 
-  api_gateway:
-    image: deviannnn/restaurant:api-gateway
+  waiter_service:
+    image: deviannnn/restaurant:waiter
     deploy:
-      replicas: 0
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -592,7 +590,84 @@ services:
         parallelism: 2
         delay: 10s
         failure_action: rollback
-        monitor: 30s
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+    networks:
+      - restaurant_net
+
+  mail_service:
+    image: deviannnn/restaurant:mail
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PUBLIC_IP_GATEWAY=ec2-52-74-233-246.ap-southeast-1.compute.amazonaws.com
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api_gateway:
+    image: deviannnn/restaurant:api-gateway
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
         max_failure_ratio: 0.1
         order: start-first
       rollback_config:
