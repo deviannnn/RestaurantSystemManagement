@@ -29,6 +29,8 @@ const RabbitMQ = require('./config/rabbitmq');
                 console.error('Error sending mail:', error);
             }
         });
+
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
         console.error('[ERROR] Failed to connect to RabbitMQ -', error);
@@ -46,13 +48,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check endpoint
 app.get('/health', async (req, res) => {
     try {
+        console.log('\n-----------------HEALTH CHECK-----------------');
+
         // check rabbitmq connection
-        if (RabbitMQ.connection && RabbitMQ.channel) {
-            console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
-        } else {
-            console.error('RabbitMQ connection is not ready');
-            throw new Error('RabbitMQ connection is not ready');
-        }
+        await RabbitMQ.connect();
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
 
         // check email sending capability
         await MailService.verifySMTPConnection();

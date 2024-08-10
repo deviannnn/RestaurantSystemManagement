@@ -2,17 +2,22 @@ require('dotenv').config();
 const createError = require('http-errors');
 const express = require('express');
 const logger = require('morgan');
-const connectdb = require('./config/connectdb');
 
-const { attachContainerName } = require('./middlewares/attach-container');
 const axios = require('axios');
 const OrderServiceTarget = `${process.env.ORDER_SERVICE_PROTOCAL}://${process.env.ORDER_SERVICE_HOSTNAME}:${process.env.ORDER_SERVICE_PORT}`;
+
+const { attachContainerName } = require('./middlewares/attach-container');
+
+// Connect to database
+const connectdb = require('./config/connectdb');
+connectdb(1);
 
 // Connect to rabbitmq
 const RabbitMQ = require('./config/rabbitmq');
 (async () => {
     try {
         await RabbitMQ.connect();
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
         console.error('[ERROR] Failed to connect to RabbitMQ -', error);
@@ -30,25 +35,14 @@ app.use(attachContainerName);
 // Health check endpoint
 app.get('/health', async (req, res) => {
     try {
+        console.log('\n-----------------HEALTH CHECK-----------------');
+
         // check database connection
         await connectdb();
 
         // check rabbitmq connection
-        if (RabbitMQ.connection && RabbitMQ.channel) {
-            console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
-        } else {
-            console.error('RabbitMQ connection is not ready');
-            throw new Error('RabbitMQ connection is not ready');
-        }
-
-        // check OrderService connection
-        const response = await axios.get(`${OrderServiceTarget}/health`);
-        if (response.status === 200) {
-            console.log(`OrderService connection established on [${OrderServiceTarget}]`);
-        } else {
-            console.error('OrderService connection is not ready');
-            throw new Error('OrderService connection is not ready');
-        }
+        await RabbitMQ.connect();
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
 
         res.status(200).send('Healthy');
     } catch (error) {

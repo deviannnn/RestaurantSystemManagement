@@ -48,7 +48,7 @@ services.forEach(({ route, protocol, target }) => {
     }
   };
 
-  if(route === '/auth') {
+  if (route === '/auth') {
     app.use(`/api${route}`, createProxyMiddleware(proxyOptions));
   } else {
     app.use(`/api${route}`, checkRevokedToken, authenticate, createProxyMiddleware(proxyOptions));

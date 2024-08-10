@@ -5,9 +5,6 @@ services:
     image: mysql:9
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 1024M
         reservations:
           cpus: '0.3'
           memory: 384M
@@ -51,9 +48,6 @@ services:
     image: mysql:9
     deploy:
       resources:
-        limits:
-          cpus: '0.75'
-          memory: 1536M
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -97,9 +91,6 @@ services:
     image: mysql:9
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 1024M
         reservations:
           cpus: '0.25'
           memory: 384M
@@ -143,9 +134,6 @@ services:
     image: mysql:9
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 512M
         reservations:
           cpus: '0.25'
           memory: 256M
@@ -189,9 +177,6 @@ services:
     image: mysql:9
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 512M
         reservations:
           cpus: '0.25'
           memory: 256M
@@ -235,9 +220,6 @@ services:
     image: rabbitmq:3.13-management-alpine
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 1024M
         reservations:
           cpus: '0.3'
           memory: 512M
@@ -282,9 +264,6 @@ services:
     image: redis:7.2.5-alpine
     deploy:
       resources:
-        limits:
-          cpus: '0.4'
-          memory: 1536M
         reservations:
           cpus: '0.3'
           memory: 512M

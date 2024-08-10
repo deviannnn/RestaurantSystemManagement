@@ -2,12 +2,16 @@ require('dotenv').config();
 const createError = require('http-errors');
 const express = require('express');
 const logger = require('morgan');
-const connectdb = require('./config/connectdb');
 
-const { attachContainerName } = require('./middlewares/attach-container');
 const axios = require('axios');
 const CatalogServiceTarget = `${process.env.CATALOG_SERVICE_PROTOCAL}://${process.env.CATALOG_SERVICE_HOSTNAME}:${process.env.CATALOG_SERVICE_PORT}`;
 const TableServiceTarget = `${process.env.TABLE_SERVICE_PROTOCAL}://${process.env.TABLE_SERVICE_HOSTNAME}:${process.env.TABLE_SERVICE_PORT}`;
+
+const { attachContainerName } = require('./middlewares/attach-container');
+
+// Connect to database
+const connectdb = require('./config/connectdb');
+connectdb(1);
 
 // Connect to rabbitmq
 const OrderService = require('./services/order-service');
@@ -24,6 +28,8 @@ const RabbitMQ = require('./config/rabbitmq');
                 console.error('Error updating table status for new order:', error);
             }
         });
+
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
     } catch (error) {
         console.error('[ERROR] Config -', RabbitMQ.rabbitmqUrl);
         console.error('[ERROR] Failed to connect to RabbitMQ -', error);
@@ -41,34 +47,14 @@ app.use(attachContainerName);
 // Health check endpoint
 app.get('/health', async (req, res) => {
     try {
+        console.log('\n-----------------HEALTH CHECK-----------------');
+
         // check database connection
         await connectdb();
 
         // check rabbitmq connection
-        if (RabbitMQ.connection && RabbitMQ.channel) {
-            console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
-        } else {
-            console.error('RabbitMQ connection is not ready');
-            throw new Error('RabbitMQ connection is not ready');
-        }
-
-        // check CatalogService connection
-        const response1 = await axios.get(`${CatalogServiceTarget}/health`);
-        if (response1.status === 200) {
-            console.log(`CatalogService connection established on [${CatalogServiceTarget}]`);
-        } else {
-            console.error('CatalogService connection is not ready');
-            throw new Error('CatalogService connection is not ready');
-        }
-
-        // check TableService connection
-        const response2 = await axios.get(`${TableServiceTarget}/health`);
-        if (response2.status === 200) {
-            console.log(`TableService connection established on [${TableServiceTarget}]`);
-        } else {
-            console.error('TableService connection is not ready');
-            throw new Error('TableService connection is not ready');
-        }
+        await RabbitMQ.connect();
+        console.log(`RabbitMQ connection established on [${RabbitMQ.rabbitmqUrl}]`);
 
         res.status(200).send('Healthy');
     } catch (error) {

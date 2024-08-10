@@ -23,6 +23,8 @@
     docker stack rm <stack_name>
 
     docker swarm leave --force
+
+    docker swarm init --force-new-cluster --advertise-addr node01:2377
 -------------------------------------------------------------------
 
 
@@ -33,12 +35,16 @@
     docker service scale <service_id>=0
 
 
-    ## labels node
+    ## node
 
         docker node inspect <node_id> --format '{{ .Spec.Labels }}'
 
         docker node update --label-add key=value <node_id>
 
+        docker node update --availability drain <NODE>
+        docker node update --availability active <NODE>
+        
+        docker node demote
 
     ## update service
 
@@ -99,6 +105,11 @@ nano prometheus.yml
         nano docker-compose.yml
         docker stack deploy -c docker-compose.yml rs
 
+        docker service scale rs_waiter_service=1 rs_kitchen_service=1 rs_mail_service=1 
+        docker service scale rs_catalog_service=1 rs_table_service=1 rs_user_service=1
+        docker service scale rs_order_service=1
+        docker service scale rs_payment_service=1
+        docker service scale rs_api_gateway=1
 
         docker container exec -it <container_id> npx sequelize-cli db:migrate
         docker container exec -it <container_id> npx sequelize-cli db:seed:all
