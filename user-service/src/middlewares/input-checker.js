@@ -162,7 +162,7 @@ module.exports = {
             .notEmpty().withMessage('Confirm password is required')
             .isString().withMessage('Confirm password must be a string')
             .custom((value, { req }) => {
-                if (value !== req.body.password) throw new Error('Password confirmation does not match password');
+                if (value !== req.body.newPassword) throw new Error('Password confirmation does not match password');
                 return true;
             }),
         validator

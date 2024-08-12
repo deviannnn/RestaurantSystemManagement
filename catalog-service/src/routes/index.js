@@ -9,19 +9,19 @@ router.use(authenticate);
 
 // Categories CRUD
 router.post('/categories', authorize(["admin"]), CategoryController.createCategory);
-router.get('/categories/:categoryId?', authorize(["admin, manager, chef"]), CategoryController.getCategories); // req.query.include ?
+router.get('/categories/:categoryId?', authorize(["admin", "manager", "chef"]), CategoryController.getCategories); // req.query.include ?
 router.put('/categories/:categoryId', authorize(["admin"]), CategoryController.updateCategory);
 router.delete('/categories/:categoryId', authorize(["admin"]), CategoryController.deleteCategory);
 
 
 // Items Business Logic
 router.put('/items/:itemId/toggle-available', authorize(["admin", "manager", "chef"]), ItemController.toggleAvailable);
-router.get('/items/search', authorize(["admin, manager, chef"]), ItemController.getItemsSearch);
+router.get('/items/search', authorize(["admin", "manager", "chef"]), ItemController.getItemsSearch);
 router.post('/items/batch', ItemController.batchValidator);
 
 // Items CRUD
 router.post('/items', authorize(["admin"]), ItemController.createItem);
-router.get('/items/:itemId?', authorize(["admin, manager, chef"]), ItemController.getItems);
+router.get('/items/:itemId?', authorize(["admin", "manager", "chef"]), ItemController.getItems);
 router.put('/items/:itemId', authorize(["admin"]), ItemController.updateItem);
 router.delete('/items/:itemId', authorize(["admin"]), ItemController.deleteItem);
 

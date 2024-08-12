@@ -308,11 +308,14 @@ module.exports = {
         inputChecker.checkBodyChangePassword,
         async (req, res, next) => {
             try {
+                const {oldPassword, newPassword} = req.body;
+                
                 const user = await UserService.getUserById(req.user.id);
                 if (!user) return next(createError(404, 'User\'s account not found'));
+                
                 if (!bcrypt.compareSync(oldPassword, user.password)) return next(createError(400, 'Invalid input', { data: [{ field: 'oldPassword', value: oldPassword, detail: "Old password does not match" }] }));
-
-                const hashPassword = await bcrypt.hash(req.body.newPassword, SALT_PASSWORD);
+                
+                const hashPassword = await bcrypt.hash(newPassword, SALT_PASSWORD);
                 const updatedUser = await UserService.updateUser({ id: req.user.id, password: hashPassword });
 
                 res.status(200).json({
@@ -339,7 +342,7 @@ module.exports = {
             if (!user) return next(createError(404, 'User\'s account not found'));
             if (user.active) return next(createError(400, 'User\'s account already has been activated'));
 
-            const token = jwtUtils.generateToken({ id: newUser.id }, 'active');
+            const token = jwtUtils.generateToken({ id: user.id }, 'active');
             const dataToSend = {
                 type: 'active',
                 fullName: user.fullName,
