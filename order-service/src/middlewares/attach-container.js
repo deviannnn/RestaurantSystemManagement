@@ -4,7 +4,8 @@ const attachContainerName = (req, res, next) => {
     const originalJson = res.json;
     res.json = function (data) {
         const responseData = {
-            container: os.hostname() + 'load test/stress test',
+            // container: os.hostname() + 'load test/stress test',
+            container: os.hostname(),
             ...data
         };
         originalJson.call(this, responseData);

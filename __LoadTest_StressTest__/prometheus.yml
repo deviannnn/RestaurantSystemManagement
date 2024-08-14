@@ -1,0 +1,73 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'catalog_service'
+    static_configs:
+      - targets: ['catalog_service:5000']
+
+  - job_name: 'kitchen_service'
+    static_configs:
+      - targets: ['kitchen_service:5000']
+
+  - job_name: 'mail_service'
+    static_configs:
+      - targets: ['mail_service:5000']
+
+  - job_name: 'order_service'
+    static_configs:
+      - targets: ['order_service:5000']
+
+  - job_name: 'payment_service'
+    static_configs:
+      - targets: ['payment_service:5000']
+  
+  - job_name: 'table_service'
+    static_configs:
+      - targets: ['table_service:5000']
+  
+  - job_name: 'user_service'
+    static_configs:
+      - targets: ['user_service:5000']
+
+  - job_name: 'waiter_service'
+    static_configs:
+      - targets: ['waiter_service:5000']
+
+  - job_name: 'api_gateway'
+    static_configs:
+      - targets: ['api_gateway:5000']
+
+
+
+
+  prometheus:
+    image: prom/prometheus
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - restaurant_net
+
+  grafana:
+    image: grafana/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - restaurant_net
+
+      grafana-storage:

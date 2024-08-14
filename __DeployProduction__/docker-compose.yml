@@ -1,0 +1,709 @@
+version: '3.8'
+
+services:
+  catalog_mysql:
+    image: mysql:9
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.3'
+          memory: 384M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - MYSQL_DATABASE=restaurant_system_catalog
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - catalog-db-data:/var/lib/mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  order_mysql:
+    image: mysql:9
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - MYSQL_DATABASE=restaurant_system_order
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3308:3306"
+    volumes:
+      - order-db-data:/var/lib/mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  payment_mysql:
+    image: mysql:9
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 384M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - MYSQL_DATABASE=restaurant_system_payment
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3309:3306"
+    volumes:
+      - payment-db-data:/var/lib/mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  table_mysql:
+    image: mysql:9
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - MYSQL_DATABASE=restaurant_system_table
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3310:3306"
+    volumes:
+      - table-db-data:/var/lib/mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user_mysql:
+    image: mysql:9
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - MYSQL_DATABASE=restaurant_system_user
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3311:3306"
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uroot -p123456" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  rabbitmq_service:
+    image: rabbitmq:3.13-management-alpine
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.3'
+          memory: 512M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis_service:
+    image: redis:7.2.5-alpine
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.3'
+          memory: 512M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 0s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/var/lib/redis
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  catalog_service:
+    image: deviannnn/restaurant:catalog
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_REDIS_HOST=redis_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_catalog
+      - PROD_DB_HOSTNAME=catalog_mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  order_service:
+    image: deviannnn/restaurant:order
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_order
+      - PROD_DB_HOSTNAME=order_mysql
+      - CATALOG_SERVICE_HOSTNAME=catalog_service
+      - TABLE_SERVICE_HOSTNAME=table_service
+      - CATALOG_SERVICE_PORT=5000
+      - TABLE_SERVICE_PORT=5000
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  payment_service:
+    image: deviannnn/restaurant:payment
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_payment
+      - PROD_DB_HOSTNAME=payment_mysql
+      - ORDER_SERVICE_HOSTNAME=order_service
+      - ORDER_SERVICE_PORT=5000
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  table_service:
+    image: deviannnn/restaurant:table
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_table
+      - PROD_DB_HOSTNAME=table_mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user_service:
+    image: deviannnn/restaurant:user
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PROD_REDIS_HOST=redis_service
+      - PROD_DB_USERNAME=root
+      - PROD_DB_PASSWORD=123456
+      - PROD_DB_NAME=restaurant_system_user
+      - PROD_DB_HOSTNAME=user_mysql
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kitchen_service:
+    image: deviannnn/restaurant:kitchen
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 768M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+    networks:
+      - restaurant_net
+
+  waiter_service:
+    image: deviannnn/restaurant:waiter
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+    networks:
+      - restaurant_net
+
+  mail_service:
+    image: deviannnn/restaurant:mail
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - PROD_RABBITMQ_USERNAME=admin
+      - PROD_RABBITMQ_PASSWORD=admin
+      - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
+      - PUBLIC_IP_GATEWAY=ec2-52-74-233-246.ap-southeast-1.compute.amazonaws.com
+    networks:
+      - restaurant_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api_gateway:
+    image: deviannnn/restaurant:api-gateway
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 1024M
+      placement:
+        preferences:
+          - spread: node.labels.worker
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      update_config:
+        parallelism: 2
+        delay: 10s
+        failure_action: rollback
+        monitor: 10s
+        max_failure_ratio: 0.1
+        order: start-first
+      rollback_config:
+        parallelism: 2
+        delay: 0s
+        failure_action: continue
+        monitor: 0s
+        max_failure_ratio: 0.2
+        order: stop-first
+    environment:
+      - NODE_ENV=production
+      - PROD_REDIS_HOST=redis_service
+      - CATALOG_SERVICE_HOSTNAME=catalog_service
+      - MAIL_SERVICE_HOSTNAME=mail_service
+      - ORDER_SERVICE_HOSTNAME=order_service
+      - PAYMENT_SERVICE_HOSTNAME=payment_service
+      - TABLE_SERVICE_HOSTNAME=table_service
+      - USER_SERVICE_HOSTNAME=user_service
+      - KITCHEN_SERVICE_HOSTNAME=kitchen_service
+      - WAITER_SERVICE_HOSTNAME=waiter_service
+      - CATALOG_SERVICE_PORT=5000
+      - MAIL_SERVICE_PORT=5000
+      - ORDER_SERVICE_PORT=5000
+      - PAYMENT_SERVICE_PORT=5000
+      - TABLE_SERVICE_PORT=5000
+      - USER_SERVICE_PORT=5000
+      - KITCHEN_SERVICE_PORT=5000
+      - WAITER_SERVICE_PORT=5000
+    ports:
+      - "80:5000"
+      - "443:5000"
+    networks:
+      - restaurant_net
+
+  viz:
+    image: dockersamples/visualizer
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - restaurant_net
+
+volumes:
+  catalog-db-data:
+  order-db-data:
+  payment-db-data:
+  table-db-data:
+  user-db-data:
+  rabbitmq-data:
+  redis-data:
+
+
+networks:
+  restaurant_net:
+    driver: overlay
