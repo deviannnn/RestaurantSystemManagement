@@ -349,7 +349,7 @@ module.exports = {
                 gender: user.gender,
                 gmail: user.gmail,
                 phone: user.phone,
-                route: `/auth/active?token=${token}`
+                route: `/api/auth/active?token=${token}`
             }
             await RabbitMQService.publishNewMail(dataToSend).catch(err => {
                 console.error('Error publishing On User Registed:', err);
