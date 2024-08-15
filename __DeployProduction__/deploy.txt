@@ -30,10 +30,15 @@
 
 # some swarm syntax
 
-    docker service logs -f 
+    
+    docker ps | less -S
+    docker service ls | less -S
 
-    docker service scale <service_id>=0
+    docker exec -it <container_id> /bin/bash
 
+    mysql -u root -h 127.0.0.1 -p
+    show databases;
+    show tables;
 
     ## node
 
@@ -47,6 +52,10 @@
         docker node demote
 
     ## update service
+    
+        docker service logs -f 
+
+        docker service scale <service_id>=0
 
         docker service inspect <service_id>
 
@@ -97,11 +106,7 @@ nano prometheus.yml
 
 
         docker swarm init --advertise-addr 52.74.233.246
-
-        docker node update --label-add worker=true worker-1
-        docker node update --label-add worker=true worker-2
-        
-        
+                
         nano docker-compose.yml
         docker stack deploy -c docker-compose.yml rs
 
@@ -111,10 +116,17 @@ nano prometheus.yml
         docker service scale rs_payment_service=1
         docker service scale rs_api_gateway=1
 
+
         docker container exec -it <container_id> npx sequelize-cli db:migrate
         docker container exec -it <container_id> npx sequelize-cli db:seed:all
 
+        docker service update --env-add PUBLIC_IP_GATEWAY=47.129.164.244 rs_mail_service
 
-        docker service update --env-add PUBLIC_IP_GATEWAY=<ip> rs_mail_service
+
+        docker service update --image deviannnn/restaurant:order --force rs_order_service
 
 
+        docker node update --availability drain <NODE>
+        docker node update --availability active <NODE>
+
+        docker system prune --volumes -a

@@ -6,11 +6,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.3'
           memory: 384M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker        
       replicas: 1
       restart_policy:
         condition: any
@@ -49,11 +48,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.5'
           memory: 512M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -92,11 +90,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.25'
           memory: 384M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -135,11 +132,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.25'
           memory: 256M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -178,11 +174,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.25'
           memory: 256M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -221,11 +216,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.3'
           memory: 512M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -265,11 +259,10 @@ services:
     deploy:
       resources:
         reservations:
-          cpus: '0.3'
           memory: 512M
       placement:
-        preferences:
-          - spread: node.labels.worker
+        constraints:
+          - node.role == worker
       replicas: 1
       restart_policy:
         condition: any
@@ -619,7 +612,7 @@ services:
       - PROD_RABBITMQ_USERNAME=admin
       - PROD_RABBITMQ_PASSWORD=admin
       - PROD_RABBITMQ_HOSTNAME=rabbitmq_service
-      - PUBLIC_IP_GATEWAY=ec2-52-74-233-246.ap-southeast-1.compute.amazonaws.com
+      - PUBLIC_IP_GATEWAY=ec2-13-229-56-124.ap-southeast-1.compute.amazonaws.com
     networks:
       - restaurant_net
     healthcheck:
@@ -635,9 +628,6 @@ services:
         limits:
           cpus: '0.35'
           memory: 1024M
-      placement:
-        preferences:
-          - spread: node.labels.worker
       replicas: 1
       restart_policy:
         condition: on-failure

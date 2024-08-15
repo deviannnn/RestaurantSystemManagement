@@ -1,8 +1,8 @@
 from locust import HttpUser, task, between
 
-class HelloWorldUser(HttpUser):
+class RestaurantLoadTest(HttpUser):
     wait_time = between(1, 5)
-    host = "http://ec2-18-136-230-69.ap-southeast-1.compute.amazonaws.com"
+    host = "http://ec2-47-129-164-244.ap-southeast-1.compute.amazonaws.com"
 
     @task
     def post_example(self):
@@ -27,7 +27,7 @@ class HelloWorldUser(HttpUser):
         }
 
         headers = {
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwicm9sZUlkIjo0LCJmdWxsTmFtZSI6IlR1YW4gQW4iLCJpYXQiOjE3MjMzMTI5MDIsImV4cCI6MTcyMzMyMDEwMn0.mNRxbZ7qN3pqRegfaXtbbWGY1VXFFIwD0Y0MecINk3E",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZUlkIjo0LCJmdWxsTmFtZSI6IldhaXRlciBVc2VyIiwiaWF0IjoxNzIzNzEzMjE2LCJleHAiOjE3MjM3MjA0MTZ9.vxdS592EmGxvoKKHOaOO1XhJO2awWFMSuB4jUrfpowc",
             "Content-Type": "application/json"
         }
 

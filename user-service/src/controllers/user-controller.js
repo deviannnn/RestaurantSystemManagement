@@ -28,7 +28,7 @@ module.exports = {
             try {
                 const { roleId, fullName, gender, nationalId, phone, gmail } = req.body;
 
-                const password = randomPassword.generate({ length: 10, numbers: true, symbols: true });
+                const password = randomPassword.generate({ length: 10, numbers: true });
                 const hashPassword = await bcrypt.hash(password, SALT_PASSWORD);
 
                 const newUser = await UserService.createUser({ roleId, fullName, gender, nationalId, phone, gmail, password: hashPassword });
@@ -204,7 +204,7 @@ module.exports = {
             const user = await UserService.getUserByGmail(gmail);
             if (!user) return next(createError(404, 'User\'s account not found'));
 
-            const password = randomPassword.generate({ length: 10, numbers: true, symbols: true });
+            const password = randomPassword.generate({ length: 10, numbers: true });
             const hashPassword = await bcrypt.hash(password, SALT_PASSWORD);
 
             await UserService.updateUser({ id: user.id, password: hashPassword });
@@ -308,13 +308,13 @@ module.exports = {
         inputChecker.checkBodyChangePassword,
         async (req, res, next) => {
             try {
-                const {oldPassword, newPassword} = req.body;
-                
+                const { oldPassword, newPassword } = req.body;
+
                 const user = await UserService.getUserById(req.user.id);
                 if (!user) return next(createError(404, 'User\'s account not found'));
-                
+
                 if (!bcrypt.compareSync(oldPassword, user.password)) return next(createError(400, 'Invalid input', { data: [{ field: 'oldPassword', value: oldPassword, detail: "Old password does not match" }] }));
-                
+
                 const hashPassword = await bcrypt.hash(newPassword, SALT_PASSWORD);
                 const updatedUser = await UserService.updateUser({ id: req.user.id, password: hashPassword });
 
