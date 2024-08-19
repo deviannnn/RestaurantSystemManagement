@@ -1,1 +1,4 @@
 *.html linguist-generated=true
+*.yml linguist-language=YAML
+*.py linguist-language=Python
+Dockerfile linguist-language=Dockerfile
