@@ -6,6 +6,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 384M
       placement:
         constraints:
@@ -48,6 +49,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 512M
       placement:
         constraints:
@@ -90,6 +92,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 384M
       placement:
         constraints:
@@ -132,6 +135,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 256M
       placement:
         constraints:
@@ -174,6 +178,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 256M
       placement:
         constraints:
@@ -216,6 +221,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 512M
       placement:
         constraints:
@@ -259,6 +265,7 @@ services:
     deploy:
       resources:
         reservations:
+          cpus: '0.15'
           memory: 512M
       placement:
         constraints:
